@@ -298,7 +298,7 @@ if(opts.file) settings.file = opts.file;
 if(opts.verbose) settings.verbose = true;
 
 if(opts.script && opts.scriptPath) {
-	console.error('Error: You cannot specify both a script file (-s/--script) and an inline script.');
+	console.error('Error: You cannot specify both a script file (-i/--script) and an inline script.');
 	process.exit(1);
 }
 if(opts.script) settings.script = opts.script;
