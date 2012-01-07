@@ -291,7 +291,7 @@ else
     settings.modulePaths = findModules(config.moduleDirectories);
 
 if(opts.modulePaths && opts.modulePaths[0] !== false)
-    settings.modulePaths = opts.modulePaths;
+    settings.modulePaths.push.apply(settings.modulePaths, opts.modulePaths);
 
 if(opts.file) settings.file = opts.file;
 if(opts.verbose) settings.verbose = true;
