@@ -102,12 +102,10 @@ var config = {
         }
         
         // More than one property. Cross-reference with autoUnwrapProperties
-        if(config.autoUnwrapProperties.length > 0) {
-            for(i = 0; i < config.autoUnwrapProperties.length; i++) {
-                propName = config.autoUnwrapProperties[i];
-                if(obj.hasOwnProperty(propName))
-                    return obj[propName];
-            }
+        for(i = 0; i < config.autoUnwrapProperties.length; i++) {
+            propName = config.autoUnwrapProperties[i];
+            if(obj.hasOwnProperty(propName))
+                return obj[propName];
         }
         
         // No luck; pass through original object
