@@ -1,0 +1,22 @@
+{
+    "name": "jutil",
+    "description": "Command-line utility for manipulating JSON",
+    "homepage": "http://github.com/misterfifths/jutil",
+    "version": "0.0.1",
+    "author": "Tim Clem",
+    "repository": {
+        "type": "git",
+        "url": "http://github.com/misterfifths/jutil.git"
+    },
+    "files": [ "jutil.js" ],
+    "main": "./jutil",
+    "bin": {
+        "jutil": "./jutil.js"
+    },
+    "dependencies": {
+        "nomnom": "1.5.x"
+    },
+    "engines": {
+        "node": ">=0.6.1"
+    }
+}
