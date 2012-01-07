@@ -124,77 +124,78 @@ var fs = require('fs'),
 
 var opts = require('nomnom')
     .script('jutil')
-    .option('script', {
-        position: 0,
-        help: 'Script to run against the loaded JSON; may also be loaded from a file via the -s option.'
-    })
-    .option('prettyPrint', {
-        abbr: 'p',
-        full: 'pretty-print',
-        flag: true,
-        help: 'Pretty-print the output.'
-    })
-    .option('unwrapProperty', {
-        abbr: 'u',
-        metavar: 'KEY',
-        full: 'unwrap-prop',
-        type: 'string',
-        help: 'Operate only against the given property of the loaded JSON.'
-    })
-    .option('autoUnwrap', {
-        abbr: 'a',
-        full: 'auto-unwrap',
-        flag: true,
-        help: 'Attempt to intelligently extract a useful property of the loaded JSON to run against.'
-    })
-    .option('sort', {
-        abbr: 's',
-        flag: true,
-        help: 'Sort keys in the output.'
-    })
-    .option('file', {
-        abbr: 'f',
-        metavar: 'FILE',
-        help: 'Load JSON from the given file instead of reading from stdin.',
-        type: 'string'
-    })
-    .option('scriptPath', {
-        abbr: 'i',
-        full: 'script',
-        metavar: 'FILE',
-        help: 'Load the script to run from the given file instead of the first positional argument.',
-        type: 'string'
-    })
-    .option('configPath', {
-        abbr: 'c',
-        full: 'config',
-        metavar: 'FILE',
-        help: 'Load the given config file. The default is ~/.jutil/config; specify --no-config to use the default configuration.',
-        type: 'string',
-        'default': '~/.jutil/config'
-    })
-    .option('moduleDirectories', {
-        abbr: 'M',
-        full: 'module-dir',
-        metavar: 'DIR',
-        list: true,
-        type: 'string',
-        help: 'Add the given directory as a module path. Any .js files in the directory will be loaded before executing. Specify --no-module-dir to disable module directory loading.'
-    })
-    .option('modulePaths', {
-        abbr: 'm',
-        full: 'module',
-        metavar: 'FILE',
-        list: true,
-        type: 'string',
-        help: 'Load the given JavaScript file before executing.'
-    })
-    .option('verbose', {
-        abbr: 'v',
-        flag: true,
-        help: 'Be verbose about things (e.g. module loading).'
-    })
-    .parse();
+    .options({
+        script: {
+            position: 0,
+            help: 'Script to run against the loaded JSON; may also be loaded from a file via the -s option.'
+        },
+        prettyPrint: {
+            abbr: 'p',
+            full: 'pretty-print',
+            flag: true,
+            help: 'Pretty-print the output.'
+        },
+        unwrapProperty: {
+            abbr: 'u',
+            metavar: 'KEY',
+            full: 'unwrap-prop',
+            type: 'string',
+            help: 'Operate only against the given property of the loaded JSON.'
+        },
+        autoUnwrap: {
+            abbr: 'a',
+            full: 'auto-unwrap',
+            flag: true,
+            help: 'Attempt to intelligently extract a useful property of the loaded JSON to run against.'
+        },
+        sort: {
+            abbr: 's',
+            flag: true,
+            help: 'Sort keys in the output.'
+        },
+        file: {
+            abbr: 'f',
+            metavar: 'FILE',
+            help: 'Load JSON from the given file instead of reading from stdin.',
+            type: 'string'
+        },
+        scriptPath: {
+            abbr: 'i',
+            full: 'script',
+            metavar: 'FILE',
+            help: 'Load the script to run from the given file instead of the first positional argument.',
+            type: 'string'
+        },
+        configPath: {
+            abbr: 'c',
+            full: 'config',
+            metavar: 'FILE',
+            help: 'Load the given config file. The default is ~/.jutil/config; specify --no-config to use the default configuration.',
+            type: 'string',
+            'default': '~/.jutil/config'
+        },
+        moduleDirectories: {
+            abbr: 'M',
+            full: 'module-dir',
+            metavar: 'DIR',
+            list: true,
+            type: 'string',
+            help: 'Add the given directory as a module path. Any .js files in the directory will be loaded before executing. Specify --no-module-dir to disable module directory loading.'
+        },
+        modulePaths: {
+            abbr: 'm',
+            full: 'module',
+            metavar: 'FILE',
+            list: true,
+            type: 'string',
+            help: 'Load the given JavaScript file before executing.'
+        },
+        verbose: {
+            abbr: 'v',
+            flag: true,
+            help: 'Be verbose about things (e.g. module loading).'
+        }
+    }).parse();
 
 configPath = opts.configPath;
 
