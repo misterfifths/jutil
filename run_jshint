@@ -1,11 +1,5 @@
 #!/bin/bash
 
-# For some reason jshint refuses to run against files that don't have a .js
-# extension. Hence this jankery...
-
 jutildir="`dirname $0`"
-tempcopy="/tmp/jutil-$$.js"
 
-cp "$jutildir/jutil" $tempcopy
-jshint $tempcopy --config "$jutildir/jshint_config.json"
-rm $tempcopy
+jshint "$jutildir/jutil.js" --config "$jutildir/jshint_config.json"
