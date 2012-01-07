@@ -16,6 +16,9 @@
     "dependencies": {
         "nomnom": "1.5.x"
     },
+    "devDependencies": {
+        "jshint": ">=0.5.5"
+    },
     "engines": {
         "node": ">=0.6.1"
     }
