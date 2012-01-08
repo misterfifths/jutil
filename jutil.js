@@ -898,6 +898,7 @@ function loadConfig(defaultConfig, configPath)
         copyStringArraySetting(userConfig, config, 'autoUnwrapProperties');
         copyFunctionSetting(userConfig, config, 'autoUnwrapper', 2);
         copyBooleanSetting(userConfig, config, 'disableWithClause');
+        copyBooleanSetting(userConfig, config, 'disableSmartOutput');
         
         if(userConfig.hasOwnProperty('prettyPrintIndent')) {
             switch(typeof userConfig.prettyPrintIndent) {
