@@ -118,67 +118,70 @@ var defaultConfig = {
     }
 };
 
-parseCommandLine({
-    script: {
-        help: 'Run a script against the loaded data. Its return value will be printed as JSON.',
-        options: {
-            script: {
-                position: 1,
-                help: 'Script to run against the loaded JSON; may also be loaded from a file via the -i option.'
+// For now (?) we do nothing if imported elsewhere via require
+if(require.main == module) {
+    parseCommandLine({
+        script: {
+            help: 'Run a script against the loaded data. Its return value will be printed as JSON.',
+            options: {
+                script: {
+                    position: 1,
+                    help: 'Script to run against the loaded JSON; may also be loaded from a file via the -i option.'
+                },
+                scriptPath: {
+                    abbr: 'i',
+                    full: 'script',
+                    metavar: 'FILE',
+                    help: 'Load the script to run from the given file instead of the first positional argument.',
+                    type: 'string'
+                }
             },
-            scriptPath: {
-                abbr: 'i',
-                full: 'script',
-                metavar: 'FILE',
-                help: 'Load the script to run from the given file instead of the first positional argument.',
-                type: 'string'
-            }
+            outputsJSON: true,
+            hasWithClauseOpt: true,
+            handler: scriptCommandHandler
         },
-        outputsJSON: true,
-        hasWithClauseOpt: true,
-        handler: scriptCommandHandler
-    },
-    
-    where: {
-        help: 'Iterate over the input, returning only objects that match the given predicate.',
-        options: {
-            predicate: {
-                position: 1,
-                required: true,
-                help: 'Predicate to evaluate for each object in the loaded JSON. (Required)'
-            }
+        
+        where: {
+            help: 'Iterate over the input, returning only objects that match the given predicate.',
+            options: {
+                predicate: {
+                    position: 1,
+                    required: true,
+                    help: 'Predicate to evaluate for each object in the loaded JSON. (Required)'
+                }
+            },
+            outputsJSON: true,
+            hasWithClauseOpt: true,
+            handler: whereCommandHandler
         },
-        outputsJSON: true,
-        hasWithClauseOpt: true,
-        handler: whereCommandHandler
-    },
-    
-    first: {
-        help: 'Iterate over the input, returning the first object that matches the given predicate.',
-        options: {
-            predicate: {
-                position: 1,
-                help: 'Predicate to evaluate for each object in the loaded JSON. If omitted, the first object from the input will be returned.'
-            }
+        
+        first: {
+            help: 'Iterate over the input, returning the first object that matches the given predicate.',
+            options: {
+                predicate: {
+                    position: 1,
+                    help: 'Predicate to evaluate for each object in the loaded JSON. If omitted, the first object from the input will be returned.'
+                }
+            },
+            outputsJSON: true,
+            hasWithClauseOpt: true,
+            handler: firstCommandHandler
         },
-        outputsJSON: true,
-        hasWithClauseOpt: true,
-        handler: firstCommandHandler
-    },
-    
-    count: {
-        help: 'Iterate over the input, counting the objects that match the given predicate.',
-        options: {
-            predicate: {
-                position: 1,
-                help: 'Predicate to evaluate for each object in the loaded JSON. If omitted, all objects will be counted.'
-            }
-        },
-        outputsJSON: false,
-        hasWithClauseOpt: true,
-        handler: countCommandHandler
-    }
-});
+        
+        count: {
+            help: 'Iterate over the input, counting the objects that match the given predicate.',
+            options: {
+                predicate: {
+                    position: 1,
+                    help: 'Predicate to evaluate for each object in the loaded JSON. If omitted, all objects will be counted.'
+                }
+            },
+            outputsJSON: false,
+            hasWithClauseOpt: true,
+            handler: countCommandHandler
+        }
+    });
+}
 
 
 // Basic script command
