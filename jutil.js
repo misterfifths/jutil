@@ -164,6 +164,19 @@ parseCommandLine({
         outputsJSON: true,
         hasWithClauseOpt: true,
         handler: firstCommandHandler
+    },
+    
+    count: {
+        help: 'Iterate over the input, counting the objects that match the given predicate.',
+        options: {
+            predicate: {
+                position: 1,
+                help: 'Predicate to evaluate for each object in the loaded JSON. If omitted, all objects will be counted.'
+            }
+        },
+        outputsJSON: false,
+        hasWithClauseOpt: true,
+        handler: countCommandHandler
     }
 });
 
@@ -243,6 +256,21 @@ function firstCommandHandler(runtimeSettings, config, opts)
     });
     
     return res;
+}
+
+function countCommandHandler(runtimeSettings, config, opts)
+{
+    var res = 0;
+    
+    if(!opts.predicate)
+        opts.predicate = 'true';
+    
+    runPredicate(runtimeSettings, config, opts, function(match) {
+        res++;
+        return true;
+    });
+    
+    process.stdout.write(res.toString() + '\n');
 }
 
 function runPredicate(runtimeSettings, config, opts, handleMatch)
