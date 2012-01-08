@@ -143,7 +143,7 @@ if(opts.moduleDirectories && opts.moduleDirectories[0] === false) // nomnom turn
     settings.modulePaths = [];
 else if(opts.moduleDirectories) {
     var dirs = opts.moduleDirectories;
-    dirs.push.apply(config.moduleDirectories);
+    dirs.push.apply(dirs, config.moduleDirectories);
     settings.modulePaths = findModules(dirs);
 }
 else
