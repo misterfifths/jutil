@@ -113,10 +113,6 @@ var defaultConfig = {
     }
 };
 
-var fs = require('fs'),
-    path = require('path'),
-    vm = require('vm');
-
 parseCommandLine({
     script: {
         help: 'Run a script against the loaded data. Its return value will be printed as JSON.',
@@ -134,7 +130,9 @@ parseCommandLine({
 
 function scriptCommandHandler(runtimeSettings, config, opts)
 {
-    var scriptPath,
+    var fs = require('fs'),
+        vm = require('vm'),
+        scriptPath,
         script;
     
     if(opts.script && opts.scriptPath) {
@@ -188,7 +186,9 @@ function runCommand(commandDesc, opts)
 // a sandbox, as well as loading and parsing the input file (or stdin).
 function makeRuntimeSettings(commandDesc, config, opts)
 {
-    var settings = {},
+    var fs = require('fs'),
+        vm = require('vm'),
+        settings = {},
         dirs;
     
     if(commandDesc.outputsJSON) {
@@ -263,7 +263,11 @@ function makeRuntimeSettings(commandDesc, config, opts)
 
 function loadModules(modulePaths, sandbox)
 {
-    var i, modulePath, moduleContents;
+    var fs = require('fs'),
+        vm = require('vm'),
+        i,
+        modulePath,
+        moduleContents;
 
     for(i = 0; i < modulePaths.length; i++) {
         modulePath = modulePaths[i];
@@ -280,7 +284,8 @@ function loadModules(modulePaths, sandbox)
 
 function outputJSON(obj, runtimeSettings, config)
 {
-    var buffer;
+    var fs = require('fs'),
+        buffer;
 
     if(obj === undefined)
         return;
@@ -463,13 +468,15 @@ function parseCommandLine(commands)
 
 function loadConfig(defaultConfig, configPath)
 {
-    var realConfigPath,
+    var fs = require('fs'),
+        vm = require('vm'),
+        config = {},
+        realConfigPath,
         configFile,
         configSandbox,
         propName,
         defaultConfigProperties,
-        userConfig,
-        config = {};
+        userConfig;
         
     shallowCopy(defaultConfig, config);
 
@@ -589,6 +596,8 @@ function copyBooleanSetting(userConfig, config, name)
 
 function resolvePath(p)
 {
+    var path = require('path');
+    
     switch(p.charAt(0)) {
         case '~': return path.join(process.env.HOME, p.substr(1));
         case '/': return p;
@@ -610,7 +619,9 @@ function shallowCopy(source, dest)
 
 function findModules(dirs)
 {
-    var paths = [],
+    var fs = require('fs'),
+        path = require('path'),
+        paths = [],
         moduleDir,
         allFiles,
         i,
