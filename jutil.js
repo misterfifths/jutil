@@ -113,247 +113,211 @@ var defaultConfig = {
     }
 };
 
-
 var fs = require('fs'),
     path = require('path'),
-    vm = require('vm'),
-    opts = parseCommandLine(),
-    config = loadConfig(defaultConfig, opts.configPath),
-    sandbox;
+    vm = require('vm');
 
-
-//// Merge in command-line options, load files referenced by them
-
-var settings = {};
-
-if(opts.prettyPrint === false) {}  // --no-pretty-print
-else if(opts.prettyPrint || config.alwaysPrettyPrint) settings.prettyPrinter = config.prettyPrinter;
-
-if(opts.sort === false) {} // --no-pretty-print
-else if(opts.sort || config.alwaysSort) settings.sort = true;
-
-if(opts.autoUnwrap === false) { }  // --no-auto-unwrap
-else if(opts.autoUnwrap || config.alwaysAutoUnwrap)
-    settings.unwrapper = config.autoUnwrapper;
-
-if(opts.unwrapProperty)
-    settings.unwrapper = function(config, obj) { return obj[opts.unwrapProperty]; };
-
-if(opts.moduleDirectories && opts.moduleDirectories[0] === false) // nomnom turns --no-<list option> into [false]
-    settings.modulePaths = [];
-else if(opts.moduleDirectories) {
-    var dirs = opts.moduleDirectories;
-    dirs.push.apply(dirs, config.moduleDirectories);
-    settings.modulePaths = findModules(dirs);
-}
-else
-    settings.modulePaths = findModules(config.moduleDirectories);
-
-if(opts.modulePaths && opts.modulePaths[0] !== false)
-    settings.modulePaths.push.apply(settings.modulePaths, opts.modulePaths);
-
-if(opts.file) settings.file = opts.file;
-if(opts.verbose) settings.verbose = true;
-
-if(opts.script && opts.scriptPath) {
-    console.error('Error: You cannot specify both a script file (-i/--script) and an inline script.');
-    process.exit(1);
-}
-if(opts.script) settings.script = opts.script;
-else if(opts.scriptPath) {
-    try {
-        settings.scriptPath = opts.scriptPath;
-        settings.script = fs.readFileSync(opts.scriptPath, 'utf8');
+parseCommandLine({
+    script: {
+        help: 'Run a script against the loaded data. Its return value will be printed as JSON.',
+        options: {
+            script: {
+                position: 1,
+                help: 'Script to run against the loaded JSON; may also be loaded from a file via the -s option.'
+            }
+        },
+        outputsJSON: true,
+        hasWithClauseOpt: true,
+        handler: scriptCommandHandler
     }
-    catch(exc) {
-        console.error('Error: Unable to load script file "' + opts.scriptPath + '": ' + exc);
-        process.exit(1);
-    }
-}
-
-if(!opts.file) opts.file = '/dev/stdin';  // TODO: seems hacky
-try {
-    settings.json = fs.readFileSync(opts.file, 'utf8');
-}
-catch(exc) {
-    console.error('Error: Unable to load JSON file "' + opts.file + '": ' + exc);
-    process.exit(1);
-}
-
-settings.jsonParser = config.jsonParser;
-
-//console.log(settings);
-
-
-//// Load modules
-
-sandbox = vm.createContext({
-    $config: config,
-    console: console,
-    out: console.log,
-    process: process,
-    require: require
 });
 
-for(var i = 0; i < settings.modulePaths.length; i++) {
-    var modulePath = settings.modulePaths[i];
-
-    try {
-        var moduleContents = fs.readFileSync(modulePath, 'utf8');
-        vm.runInContext(moduleContents, sandbox, modulePath);
-    }
-    catch(exc) {
-        console.warn('Warning: error loading module "' + modulePath + '": ' + exc);
-    }
-}
-
-
-//// Away we go...
-
-try {
-    sandbox.$data = settings.jsonParser(config, settings.json);
-}
-catch(exc) {
-    console.error('Error parsing JSON: ' + exc + '.\nInput:\n' + settings.json);
-    process.exit(1);
-}
-
-if(settings.unwrapper)
-    sandbox.$data = settings.unwrapper(config, sandbox.$data);
-
-var res;
-
-if(settings.script) {
-    var script = '(function() { with(this) { ' + settings.script + '; } }).apply($data);';
+function scriptCommandHandler(runtimeSettings, config, opts)
+{
+    var scriptPath,
+        script;
     
-    try {
-        res = vm.runInContext(script, sandbox, settings.scriptPath);
-    }
-    catch(exc) {
-        console.error('Error running script: ' + exc);
+    if(opts.script && opts.scriptPath) {
+        console.error('Error: You cannot specify both a script file (-i/--script) and an inline script.');
         process.exit(1);
     }
-}
-else {
+
+    if(opts.script) script = opts.script;
+    else if(opts.scriptPath) {
+        try {
+            scriptPath = resolvePath(opts.scriptPath);
+            script = fs.readFileSync(scriptPath, 'utf8');
+        }
+        catch(exc) {
+            console.error('Error: Unable to load script file "' + scriptPath + '": ' + exc);
+            process.exit(1);
+        }
+    }
+    
+    if(script) {
+        script = '(function() { with(this) { ' + script + '; } }).apply($data);';
+    
+        try {
+            return vm.runInContext(script, runtimeSettings.sandbox, runtimeSettings.scriptPath);
+        }
+        catch(exc) {
+            console.error('Error running script: ' + exc);
+            process.exit(1);
+        }
+    }
+    
     // No script to run; just pass through the input
-    res = sandbox.$data;
+    return runtimeSettings.data;
 }
 
-if(res !== undefined) {
-    if(settings.sort)
-        res = sortObject(res);
+
+//// Guts
+
+function runCommand(commandDesc, opts)
+{
+    var config = loadConfig(defaultConfig, opts.configPath),
+        runtimeSettings = makeRuntimeSettings(commandDesc, config, opts),
+        res = commandDesc.handler(runtimeSettings, config, opts);
+
+    if(commandDesc.outputsJSON)
+        outputJSON(res, runtimeSettings, config);
+}
+
+// Merges config and command line options down into a friendly object, which
+// includes searching module directories for .js files and loading them into
+// a sandbox, as well as loading and parsing the input file (or stdin).
+function makeRuntimeSettings(commandDesc, config, opts)
+{
+    var settings = {},
+        dirs;
+    
+    if(commandDesc.outputsJSON) {
+        if(opts.prettyPrint === false) {}  // --no-pretty-print
+        else if(opts.prettyPrint || config.alwaysPrettyPrint) settings.prettyPrinter = config.prettyPrinter;
+    
+        if(opts.sort === false) {} // --no-pretty-print
+        else if(opts.sort || config.alwaysSort) settings.sort = true;
+    }
+    
+    if(opts.autoUnwrap === false) { }  // --no-auto-unwrap
+    else if(opts.autoUnwrap || config.alwaysAutoUnwrap)
+        settings.unwrapper = config.autoUnwrapper;
+    
+    if(opts.unwrapProperty)
+        settings.unwrapper = function(config, obj) { return obj[opts.unwrapProperty]; };
+    
+    if(opts.moduleDirectories && opts.moduleDirectories[0] === false) // nomnom turns --no-<list option> into [false]
+        settings.modulePaths = [];
+    else if(opts.moduleDirectories) {
+        dirs = opts.moduleDirectories;
+        dirs.push.apply(dirs, config.moduleDirectories);
+        settings.modulePaths = findModules(dirs);
+    }
+    else
+        settings.modulePaths = findModules(config.moduleDirectories);
+    
+    if(opts.modulePaths && opts.modulePaths[0] !== false)
+        settings.modulePaths.push.apply(settings.modulePaths, opts.modulePaths);
+    
+    if(opts.verbose) settings.verbose = true;
+    
+    if(opts.file)
+        settings.file = opts.file;
+    else
+        settings.file = '/dev/stdin';
+    
+    try {
+        settings.json = fs.readFileSync(settings.file, 'utf8');
+    }
+    catch(exc) {
+        console.error('Error: Unable to load JSON file "' + settings.file + '": ' + exc);
+        process.exit(1);
+    }
+    
+    settings.jsonParser = config.jsonParser;
+    
+    try {
+        settings.data = settings.jsonParser(config, settings.json);
+    }
+    catch(exc) {
+        console.error('Error parsing JSON: ' + exc + '.\nInput:\n' + settings.json);
+        process.exit(1);
+    }
+    
+    if(settings.unwrapper)
+        settings.data = settings.unwrapper(config, settings.data);
+    
+    settings.sandbox = vm.createContext({
+        $config: config,
+        $data: settings.data,
+        console: console,
+        out: console.log,
+        process: process,
+        require: require
+    });
+    
+    loadModules(settings.modulePaths, settings.sandbox);
+    
+    return settings;
+}
+
+function loadModules(modulePaths, sandbox)
+{
+    var i, modulePath, moduleContents;
+
+    for(i = 0; i < modulePaths.length; i++) {
+        modulePath = modulePaths[i];
+    
+        try {
+            moduleContents = fs.readFileSync(modulePath, 'utf8');
+            vm.runInContext(moduleContents, sandbox, modulePath);
+        }
+        catch(exc) {
+            console.warn('Warning: error loading module "' + modulePath + '": ' + exc);
+        }
+    }
+}
+
+function outputJSON(obj, runtimeSettings, config)
+{
+    var buffer;
+
+    if(obj === undefined)
+        return;
+
+    if(runtimeSettings.sort)
+        obj = sortObject(obj);
 
     try {
-        if(settings.prettyPrinter)
-            res = settings.prettyPrinter(config, res);
+        if(runtimeSettings.prettyPrinter)
+            obj = runtimeSettings.prettyPrinter(config, obj);
         else
-            res = JSON.stringify(res);
+            obj = JSON.stringify(obj);
     }
     catch(exc) {
         console.error('Error converting result to JSON: ' + exc);
         process.exit(1);
     }
     
-    if(typeof res != 'string') {
+    if(typeof obj != 'string') {
         // JSON.stringify will return undefined if the top-level object is
         // a function or an XML object, neither of which should ever happen,
         // so we're just ignoring this for now.
-        res = '';
+        return;
     }
     
     // process.stdout.write seems like the obvious choice here, but
     // it causes an exception if we pipe a big result to something
     // and close the whole shebang before it can finish writing.
     // Should probably file a node bug...
-    var buffer = new Buffer(res);
+    buffer = new Buffer(obj);
     fs.write(1, buffer, 0, buffer.length);
-}
-
-
-//// Helpers
-
-function resolvePath(p)
-{
-    switch(p.charAt(0)) {
-        case '~': return path.join(process.env.HOME, p.substr(1));
-        case '/': return p;
-        default: return path.join(process.cwd(), p);
-    }
-}
-
-function shallowCopy(source, dest)
-{
-    var keys = Object.keys(source),
-        i,
-        key;
-    
-    for(i = 0; i < keys.length; i++) {
-        key = keys[i];
-        dest[key] = source[key];
-    }
-}
-
-function findModules(dirs)
-{
-    var paths = [],
-        moduleDir,
-        allFiles,
-        i,
-        j,
-        file;
-    
-    for(i = 0; i < dirs.length; i++) {
-        moduleDir = resolvePath(config.moduleDirectories[i]);
-        allFiles = [];
-        
-        try {
-            allFiles = fs.readdirSync(moduleDir);
-        }
-        catch(exc) {
-            // No warning if module directory is nonexistent
-            if(exc.code != 'ENOENT')
-                console.warn('Warning: error reading module directory "' + moduleDir + '": ' + exc);
-        }
-        
-        for(j = 0; j < allFiles.length; j++) {
-            file = allFiles[j];
-            if(path.extname(file).toLowerCase() == '.js')
-                paths.push(path.join(moduleDir, file));
-        }
-    }
-    
-    return paths;
-}
-
-function sortObject(obj)
-{
-    // This relies on the JavaScript interpreter placing some importance
-    // on the order in which keys were added to an object. Luckily V8
-    // does that, at least for now...
-    
-    var sortedKeys, sortedObj, i, key;
-    
-    if(typeof obj != 'object')
-        return obj;
-    
-    if(Array.isArray(obj))
-        return obj.map(sortObject);
-
-    sortedKeys = Object.keys(obj).sort();
-    sortedObj = {};
-
-    for(i = 0; i < sortedKeys.length; i++) {
-        key = sortedKeys[i];
-        sortedObj[key] = sortObject(obj[key]);
-    }
-    
-    return sortedObj;
 }
 
 
 //// Command line parsing
 
-function parseCommandLine()
+function parseCommandLine(commands)
 {
     var args = process.argv.slice(2),  // remove 'node' and script name
         defaultCommand = 'script',
@@ -363,7 +327,6 @@ function parseCommandLine()
         globalOpts,
         jsonOutputOpts,
         withClauseOpt,
-        commands,
         commandName,
         commandDesc,
         commandObj;
@@ -441,20 +404,6 @@ function parseCommandLine()
         help: 'Don\'t wrap the script to execute in a "with" clause.'
     };
     
-    commands = {
-        script: {
-            help: 'Run a script against the loaded data. Its return value will be printed as JSON.',
-            options: {
-                script: {
-                    position: 1,
-                    help: 'Script to run against the loaded JSON; may also be loaded from a file via the -s option.'
-                }
-            },
-            outputsJSON: true,
-            hasWithClauseOpt: true
-        }
-    };
-    
     // If we weren't invoked as 'jutil', we were called 'j<command name>',
     // which we massage into the first argument.
     if(scriptName != 'jutil')
@@ -482,7 +431,6 @@ function parseCommandLine()
             commandObj = parser.command(commandName);
             
             commandObj.help(commandDesc.help);
-            commandObj.callback(commandDesc.callback);
             
             // nomnom seems to freak out if we call options() more than once
             // on a command object, wo we're gathering all the options in one
@@ -497,6 +445,13 @@ function parseCommandLine()
                 commandDesc.options.withClause = withClauseOpt;
             
             commandObj.options(commandDesc.options);
+            
+            // Go go gadget JS scoping rules!!!
+            (function(commandDesc) {
+                commandObj.callback(function(opts) {
+                    runCommand(commandDesc, opts);
+                });
+            })(commandDesc);
         }
     }
     
@@ -505,54 +460,6 @@ function parseCommandLine()
 
 
 //// Configuration file handling
-
-function copyStringArraySetting(userConfig, config, name)
-{
-    var val, i;
-
-    if(userConfig.hasOwnProperty(name)) {
-        val = userConfig[name];
-    
-        if(Array.isArray(val)) {
-            for(i = 0; i < val.length; i++) {
-                if(typeof val[i] != 'string') {
-                    console.warn('Warning: ' + name + ' property in config file must contain only string elements; ignoring the setting');
-                    return;
-                }
-            }
-            
-            config[name] = val;
-        }
-        else
-            console.warn('Warning: ' + name + ' property in config file must be an array; ignoring the setting');
-    }
-}
-
-function copyFunctionSetting(userConfig, config, name, arity)
-{
-    if(userConfig.hasOwnProperty(name)) {
-        var val = userConfig[name];
-    
-        if(typeof val == 'function') {
-            if(val.length == arity)
-                config[name] = val;
-            else
-                console.warn('Warning: ' + name + ' function in config file must take exactly ' + arity + ' arguments; ignoring the setting');
-        }
-        else
-            console.warn('Warning: ' + name + ' property in config file must be a function; ignoring the setting');
-    }
-}
-
-function copyBooleanSetting(userConfig, config, name)
-{
-    if(userConfig.hasOwnProperty(name)) {
-        if(typeof userConfig[name] == 'boolean')
-            config[name] = userConfig[name];
-        else
-            console.warn('Warning: ' + name + ' property in config file must be a boolean; ignoring the setting');
-    }
-}
 
 function loadConfig(defaultConfig, configPath)
 {
@@ -627,6 +534,135 @@ function loadConfig(defaultConfig, configPath)
         console.warn('Warning: config file must assign to the global "config" var; ignoring the file');
     
     return config;
+}
+
+function copyStringArraySetting(userConfig, config, name)
+{
+    var val, i;
+
+    if(userConfig.hasOwnProperty(name)) {
+        val = userConfig[name];
+    
+        if(Array.isArray(val)) {
+            for(i = 0; i < val.length; i++) {
+                if(typeof val[i] != 'string') {
+                    console.warn('Warning: ' + name + ' property in config file must contain only string elements; ignoring the setting');
+                    return;
+                }
+            }
+            
+            config[name] = val;
+        }
+        else
+            console.warn('Warning: ' + name + ' property in config file must be an array; ignoring the setting');
+    }
+}
+
+function copyFunctionSetting(userConfig, config, name, arity)
+{
+    if(userConfig.hasOwnProperty(name)) {
+        var val = userConfig[name];
+    
+        if(typeof val == 'function') {
+            if(val.length == arity)
+                config[name] = val;
+            else
+                console.warn('Warning: ' + name + ' function in config file must take exactly ' + arity + ' arguments; ignoring the setting');
+        }
+        else
+            console.warn('Warning: ' + name + ' property in config file must be a function; ignoring the setting');
+    }
+}
+
+function copyBooleanSetting(userConfig, config, name)
+{
+    if(userConfig.hasOwnProperty(name)) {
+        if(typeof userConfig[name] == 'boolean')
+            config[name] = userConfig[name];
+        else
+            console.warn('Warning: ' + name + ' property in config file must be a boolean; ignoring the setting');
+    }
+}
+
+
+//// Helpers
+
+function resolvePath(p)
+{
+    switch(p.charAt(0)) {
+        case '~': return path.join(process.env.HOME, p.substr(1));
+        case '/': return p;
+        default: return path.join(process.cwd(), p);
+    }
+}
+
+function shallowCopy(source, dest)
+{
+    var keys = Object.keys(source),
+        i,
+        key;
+    
+    for(i = 0; i < keys.length; i++) {
+        key = keys[i];
+        dest[key] = source[key];
+    }
+}
+
+function findModules(dirs)
+{
+    var paths = [],
+        moduleDir,
+        allFiles,
+        i,
+        j,
+        file;
+    
+    for(i = 0; i < dirs.length; i++) {
+        moduleDir = resolvePath(dirs[i]);
+        allFiles = [];
+        
+        try {
+            allFiles = fs.readdirSync(moduleDir);
+        }
+        catch(exc) {
+            // No warning if module directory is nonexistent
+            if(exc.code != 'ENOENT')
+                console.warn('Warning: error reading module directory "' + moduleDir + '": ' + exc);
+        }
+        
+        for(j = 0; j < allFiles.length; j++) {
+            file = allFiles[j];
+            if(path.extname(file).toLowerCase() == '.js')
+                paths.push(path.join(moduleDir, file));
+        }
+    }
+    
+    return paths;
+}
+
+function sortObject(obj)
+{
+    // This relies on the JavaScript interpreter placing some importance
+    // on the order in which keys were added to an object. Luckily V8
+    // does that, at least for now...
+    
+    var sortedKeys, sortedObj, i, key;
+    
+    if(typeof obj != 'object')
+        return obj;
+    
+    if(Array.isArray(obj))
+        return obj.map(sortObject);
+
+    sortedKeys = Object.keys(obj).sort();
+    sortedObj = {};
+
+    for(i = 0; i < sortedKeys.length; i++) {
+        key = sortedKeys[i];
+        sortedObj[key] = sortObject(obj[key]);
+    }
+    
+    return sortedObj;
 }
 
 })();
