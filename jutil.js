@@ -124,7 +124,14 @@ parseCommandLine({
         options: {
             script: {
                 position: 1,
-                help: 'Script to run against the loaded JSON; may also be loaded from a file via the -s option.'
+                help: 'Script to run against the loaded JSON; may also be loaded from a file via the -i option.'
+            },
+            scriptPath: {
+                abbr: 'i',
+                full: 'script',
+                metavar: 'FILE',
+                help: 'Load the script to run from the given file instead of the first positional argument.',
+                type: 'string'
             }
         },
         outputsJSON: true,
@@ -164,8 +171,6 @@ function scriptCommandHandler(runtimeSettings, config, opts)
         script += rawScript + ';';
         if(runtimeSettings.withClause) script += ' }';
         script += ' }).apply($data);';
-        
-        console.log('!!', script);
         
         try {
             return vm.runInContext(script, runtimeSettings.sandbox, runtimeSettings.scriptPath);
