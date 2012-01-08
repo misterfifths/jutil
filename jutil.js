@@ -198,11 +198,11 @@ if(require.main == module) {
         props: {
             help: 'Iterate over the input, returning only the given properties of each object.',
             options: {
-                properties: {
+                propMappings: {
                     position: 1,
                     list: true,
                     required: true,
-                    help: 'Names of properties to extract from each object in the loaded JSON. (Required)'
+                    help: 'Names of properties to extract from each object in the loaded JSON. These are of the form [[key.]*key=][key.]*key, to follow subobjects and optionally rename them in the output. (At least one is required)'
                 }
             },
             outputsJSON: true,
@@ -307,10 +307,6 @@ function countCommandHandler(runtimeSettings, config, opts)
 
 function mapOverInput(expr, runtimeSettings, handleOne)
 {
-    var vm = require('vm'),
-        data = runtimeSettings.data,
-        i;
-    
     function applyToValue(valueStr)
     {
         // TODO: if the array contains undefined or null, this gets funky.
@@ -324,6 +320,10 @@ function mapOverInput(expr, runtimeSettings, handleOne)
         
         return vm.runInContext(script, runtimeSettings.sandbox, runtimeSettings.scriptPath);
     }
+    
+    var vm = require('vm'),
+        data = runtimeSettings.data,
+        i;
     
     // TODO: there's probably a better way to do this, all inside the sandbox,
     // rather than a bunch of calls into it. But eh, will it make that much
@@ -371,31 +371,90 @@ function selectCommandHandler(runtimeSettings, config, opts)
 
 function propsCommandHandler(runtimeSettings, config, opts)
 {
-    var res = [],
-        data = runtimeSettings.data;
-        
-    function filterProp(obj)
+    function getKeyPath(obj, path)
     {
-        var propNames = opts.properties,
-            filteredObj = {},
-            i,
-            propName;
+        var i = 0,
+            pathComponent;
+    
+        path = path.split('.');
+        while(i < path.length) {
+            if(obj === null || obj === undefined)
+                return undefined;
         
-        for(i = 0; i < propNames.length; i++) {
-            propName = propNames[i];
+            pathComponent = path[i];
+            if(!obj.hasOwnProperty(pathComponent))
+                return undefined;
             
-            // TODO: this is bad with null/undefined
-            if(obj.hasOwnProperty(propName))
-                filteredObj[propName] = obj[propName];
+            obj = obj[pathComponent];
+            i++;
         }
         
-        return filteredObj;
+        return { value: obj };
+    }
+    
+    function setKeyPath(obj, path, value)
+    {
+        var i = 0,
+            pathComponent;
+        
+        path = path.split('.');
+        while(i < path.length - 1) {
+            pathComponent = path[i];
+            
+            if(!obj.hasOwnProperty(pathComponent))
+                obj[pathComponent] = {};
+            
+            obj = obj[pathComponent];
+            i++;
+        }
+        
+        obj[path[i]] = value;
+    }
+    
+    function shapeObj(obj)
+    {
+        var i,
+            mapping,
+            res = {},
+            val;
+        
+        for(i = 0; i < propMappings.length; i++) {
+            mapping = propMappings[i];
+            val = getKeyPath(obj, mapping.from);
+            
+            if(val)
+                setKeyPath(res, mapping.to, val.value);
+        }
+        
+        return res;
+    }
+    
+    var res = [],
+        data = runtimeSettings.data,
+        propMappings = [],
+        i, s, from, to;
+        
+    for(i = 0; i < opts.propMappings.length; i++) {
+        s = opts.propMappings[i].split('=');
+        
+        if(s.length == 1 && s[0].length > 0)
+            from = to = s[0];
+        else if(s.length == 2 && s[0].length > 0 && s[1].length > 0) {
+            to = s[0];
+            from = s[1];
+        }
+        else {
+            console.error('Invalid property mapping: ' + opts.propMappings[i]);
+            process.exit(1);
+        }
+        
+        propMappings.push({ from: from, to: to });
     }
     
     if(Array.isArray(data))
-        return data.map(filterProp);
+        return data.map(shapeObj);
     
-    return filterProp(data);
+    return shapeObj(data);
 }
 
 
