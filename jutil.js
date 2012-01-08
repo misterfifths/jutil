@@ -353,21 +353,6 @@ function parseCommandLine()
         commandName,
         commandDesc,
         commandObj;
-
-    // If we weren't invoked as 'jutil', we were called 'j<command name>',
-    // which we massage into the first argument.
-    if(scriptName != 'jutil')
-        args.unshift(scriptName.substr(1));
-    else if(!firstArg ||
-            (firstArg[0] == '-' && firstArg != '-h' && firstArg != '--help'))
-    {
-        // Otherwise, add in the default command 'script', if appropriate:
-        // --help/-h -> no default
-        // no first arg -> default
-        // first arg begins with '-' -> default
-        
-        args.unshift(defaultCommand);
-    }
     
     globalOpts = {
         unwrapProperty: {
@@ -455,6 +440,21 @@ function parseCommandLine()
             hasWithClauseOpt: true
         }
     };
+    
+    // If we weren't invoked as 'jutil', we were called 'j<command name>',
+    // which we massage into the first argument.
+    if(scriptName != 'jutil')
+        args.unshift(scriptName.substr(1));
+    else if(!firstArg ||
+            (firstArg != '-h' && firstArg != '--help' && !commands.hasOwnProperty(firstArg)))
+    {
+        // Otherwise, add in the default command 'script', if appropriate:
+        // --help/-h -> no default
+        // no first arg -> default
+        // first arg is not a command name -> default
+        
+        args.unshift(defaultCommand);
+    }
     
     parser.script('jutil');
     
