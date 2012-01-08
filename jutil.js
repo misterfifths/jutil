@@ -102,7 +102,7 @@ var defaultConfig = {
         
         if(onlyPropName) {
             val = obj[onlyPropName];
-            if(typeof val == 'object')
+            if(typeof val == 'object' && val !== null)
                 return val;
         }
         
@@ -733,7 +733,7 @@ function sortObject(obj)
     
     var sortedKeys, sortedObj, i, key;
     
-    if(typeof obj != 'object')
+    if(typeof obj != 'object' || obj === null)
         return obj;
     
     if(Array.isArray(obj))
