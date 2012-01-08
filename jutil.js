@@ -137,6 +137,20 @@ parseCommandLine({
         outputsJSON: true,
         hasWithClauseOpt: true,
         handler: scriptCommandHandler
+    },
+    
+    where: {
+        help: 'Iterate over the input, returning only objects that match the given predicate.',
+        options: {
+            predicate: {
+                position: 1,
+                required: true,
+                help: 'Predicate to evaluate for each object in loaded JSON. (Required)'
+            }
+        },
+        outputsJSON: true,
+        hasWithClauseOpt: true,
+        handler: whereCommandHandler
     }
 });
 
@@ -183,6 +197,43 @@ function scriptCommandHandler(runtimeSettings, config, opts)
     
     // No script to run; just pass through the input
     return runtimeSettings.data;
+}
+
+function whereCommandHandler(runtimeSettings, config, opts)
+{
+    var vm = require('vm'),
+        data = runtimeSettings.data,
+        i,
+        res = [];
+    
+    function satisfiesPredicate(str)
+    {
+        // TODO: if the array contains undefined or null, this gets funky.
+        // Function.apply() with one of those turns 'this' into the global
+        // object, which is not what was intended, certainly.
+        var script = '(function() { ';
+        if(runtimeSettings.withClause) script += 'with(this) { ';
+        script += 'return !!(' + opts.predicate + ');';
+        if(runtimeSettings.withClause) script += ' }';
+        script += ' }).apply(' + str + ');';
+        
+        return vm.runInContext(script, runtimeSettings.sandbox, runtimeSettings.scriptPath);
+    }
+    
+    // TODO: there's probably a better way to do this, all inside the sandbox,
+    // rather than a bunch of calls into it. But eh, will it make that much
+    // of a difference, speed-wise?
+    
+    if(Array.isArray(data)) {
+        for(i = 0; i < data.length; i++) {
+            if(satisfiesPredicate('$data[' + i + ']'))
+                res.push(data[i]);
+        }
+    }
+    else if(satisfiesPredicate('$data'))
+        res.push(data);
+    
+    return res;
 }
 
 
