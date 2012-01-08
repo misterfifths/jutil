@@ -193,6 +193,21 @@ if(require.main == module) {
             outputsJSON: true,
             hasWithClauseOpt: true,
             handler: selectCommandHandler
+        },
+        
+        props: {
+            help: 'Iterate over the input, returning only the given properties of each object.',
+            options: {
+                properties: {
+                    position: 1,
+                    list: true,
+                    required: true,
+                    help: 'Names of properties to extract from each object in the loaded JSON. (Required)'
+                }
+            },
+            outputsJSON: true,
+            hasWithClauseOpt: false,
+            handler: propsCommandHandler
         }
     });
 }
@@ -352,6 +367,35 @@ function selectCommandHandler(runtimeSettings, config, opts)
     });
     
     return res;
+}
+
+function propsCommandHandler(runtimeSettings, config, opts)
+{
+    var res = [],
+        data = runtimeSettings.data;
+        
+    function filterProp(obj)
+    {
+        var propNames = opts.properties,
+            filteredObj = {},
+            i,
+            propName;
+        
+        for(i = 0; i < propNames.length; i++) {
+            propName = propNames[i];
+            
+            // TODO: this is bad with null/undefined
+            if(obj.hasOwnProperty(propName))
+                filteredObj[propName] = obj[propName];
+        }
+        
+        return filteredObj;
+    }
+    
+    if(Array.isArray(data))
+        return data.map(filterProp);
+    
+    return filterProp(data);
 }
 
 
