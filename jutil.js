@@ -341,8 +341,7 @@ function mapOverInput(expr, runtimeSettings, handleOne)
 
 function runPredicate(runtimeSettings, opts, handleMatch)
 {
-    var expr = '!!(' + opts.predicate + ')',
-        res = [];
+    var expr = '!!(' + opts.predicate + ')';
     
     mapOverInput(expr, runtimeSettings, function(raw, matched) {
         if(matched)
@@ -717,7 +716,6 @@ function parseCommandLine(commands)
         }
     };
     
-    // TODO: implement. Also needs a setting.
     withClauseOpt = {
         abbr: 'W',
         full: 'disable-with',
