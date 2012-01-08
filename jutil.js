@@ -2,8 +2,6 @@
 ;(function() {
 "use strict";
 
-// TODO: how to re-use base for modules?
-
 var defaultConfig = {
     // All files with a .js extension in these directories will be loaded
     // before evaulating the input.
@@ -42,6 +40,13 @@ var defaultConfig = {
     // Always sort keys in the output. Useful for automated testing or
     // doing diffs against the results.
     alwaysSort: false,
+    
+    // For commands that take a script to execute, don't wrap that script
+    // inside "with(this) { ... }", which is the default behavior. The clause
+    // makes for less typing (you can reference properties of the input data
+    // without "this." before them), but can cause issues if the data has a
+    // property with a name that hides some useful variable or function.
+    disableWithClause: false,
     
     // Always attempt to extract a useful property of the incoming JSON.
     // This passes the incoming data through the autoUnwrapper function
@@ -133,6 +138,7 @@ function scriptCommandHandler(runtimeSettings, config, opts)
     var fs = require('fs'),
         vm = require('vm'),
         scriptPath,
+        rawScript,
         script;
     
     if(opts.script && opts.scriptPath) {
@@ -140,11 +146,11 @@ function scriptCommandHandler(runtimeSettings, config, opts)
         process.exit(1);
     }
 
-    if(opts.script) script = opts.script;
+    if(opts.script) rawScript = opts.script;
     else if(opts.scriptPath) {
         try {
             scriptPath = resolvePath(opts.scriptPath);
-            script = fs.readFileSync(scriptPath, 'utf8');
+            rawScript = fs.readFileSync(scriptPath, 'utf8');
         }
         catch(exc) {
             console.error('Error: Unable to load script file "' + scriptPath + '": ' + exc);
@@ -152,9 +158,15 @@ function scriptCommandHandler(runtimeSettings, config, opts)
         }
     }
     
-    if(script) {
-        script = '(function() { with(this) { ' + script + '; } }).apply($data);';
-    
+    if(rawScript) {
+        script = '(function() { ';
+        if(runtimeSettings.withClause) script += 'with(this) { ';
+        script += rawScript + ';';
+        if(runtimeSettings.withClause) script += ' }';
+        script += ' }).apply($data);';
+        
+        console.log('!!', script);
+        
         try {
             return vm.runInContext(script, runtimeSettings.sandbox, runtimeSettings.scriptPath);
         }
@@ -197,6 +209,11 @@ function makeRuntimeSettings(commandDesc, config, opts)
     
         if(opts.sort === false) {} // --no-pretty-print
         else if(opts.sort || config.alwaysSort) settings.sort = true;
+    }
+    
+    if(commandDesc.hasWithClauseOpt) {
+        if(opts.disableWithClause) settings.withClause = false;
+        else settings.withClause = opts.disableWithClause === false || !config.disableWithClause;
     }
     
     if(opts.autoUnwrap === false) { }  // --no-auto-unwrap
@@ -403,8 +420,8 @@ function parseCommandLine(commands)
     
     // TODO: implement. Also needs a setting.
     withClauseOpt = {
-        abbr: 'w',
-        full: 'no-with',
+        abbr: 'W',
+        full: 'disable-with',
         flag: true,
         help: 'Don\'t wrap the script to execute in a "with" clause.'
     };
@@ -447,7 +464,7 @@ function parseCommandLine(commands)
                 shallowCopy(jsonOutputOpts, commandDesc.options);
             
             if(commandDesc.hasWithClauseOpt)
-                commandDesc.options.withClause = withClauseOpt;
+                commandDesc.options.disableWithClause = withClauseOpt;
             
             commandObj.options(commandDesc.options);
             
@@ -515,6 +532,7 @@ function loadConfig(defaultConfig, configPath)
         copyBooleanSetting(userConfig, config, 'alwaysAutoUnwrap');
         copyStringArraySetting(userConfig, config, 'autoUnwrapProperties');
         copyFunctionSetting(userConfig, config, 'autoUnwrapper', 2);
+        copyBooleanSetting(userConfig, config, 'disableWithClause');
         
         if(userConfig.hasOwnProperty('prettyPrintIndent')) {
             switch(typeof userConfig.prettyPrintIndent) {
