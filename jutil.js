@@ -143,6 +143,7 @@ if(require.main == module) {
                 }
             },
             outputsJSON: true,
+            needsSandbox: true,
             hasWithClauseOpt: true,
             handler: scriptCommandHandler
         },
@@ -157,6 +158,7 @@ if(require.main == module) {
                 }
             },
             outputsJSON: true,
+            needsSandbox: true,
             hasWithClauseOpt: true,
             handler: whereCommandHandler
         },
@@ -170,6 +172,7 @@ if(require.main == module) {
                 }
             },
             outputsJSON: true,
+            needsSandbox: true,
             hasWithClauseOpt: true,
             handler: firstCommandHandler
         },
@@ -183,6 +186,7 @@ if(require.main == module) {
                 }
             },
             outputsJSON: false,
+            needsSandbox: true,
             hasWithClauseOpt: true,
             handler: countCommandHandler
         },
@@ -197,6 +201,7 @@ if(require.main == module) {
                 }
             },
             outputsJSON: true,
+            needsSandbox: true,
             hasWithClauseOpt: true,
             handler: selectCommandHandler
         },
@@ -212,6 +217,7 @@ if(require.main == module) {
                 }
             },
             outputsJSON: true,
+            needsSandbox: false,
             hasWithClauseOpt: false,
             handler: propsCommandHandler
         }
@@ -532,20 +538,7 @@ function makeRuntimeSettings(commandDesc, config, opts)
     if(opts.unwrapProperty)
         settings.unwrapper = function(config, obj) { return obj[opts.unwrapProperty]; };
     
-    if(opts.moduleDirectories && opts.moduleDirectories[0] === false) // nomnom turns --no-<list option> into [false]
-        settings.modulePaths = [];
-    else if(opts.moduleDirectories) {
-        dirs = opts.moduleDirectories;
-        dirs.push.apply(dirs, config.moduleDirectories);
-        settings.modulePaths = findModules(dirs);
-    }
-    else
-        settings.modulePaths = findModules(config.moduleDirectories);
-    
-    if(opts.modulePaths && opts.modulePaths[0] !== false)
-        settings.modulePaths.push.apply(settings.modulePaths, opts.modulePaths);
-    
-    if(opts.verbose) settings.verbose = true;
+    settings.verbose = opts.verbose;
     
     if(opts.file)
         settings.file = opts.file;
@@ -573,16 +566,33 @@ function makeRuntimeSettings(commandDesc, config, opts)
     if(settings.unwrapper)
         settings.data = settings.unwrapper(config, settings.data);
     
-    settings.sandbox = vm.createContext({
-        $config: config,
-        $data: settings.data,
-        console: console,
-        out: console.log,
-        process: process,
-        require: require
-    });
+    // Find modules and load them into a sandbox if the command needs it,
+    // and throw the data in there too as $data
+    if(commandDesc.needsSandbox) {
+        if(opts.moduleDirectories && opts.moduleDirectories[0] === false) // nomnom turns --no-<list option> into [false]
+            settings.modulePaths = [];
+        else if(opts.moduleDirectories) {
+            dirs = opts.moduleDirectories;
+            dirs.push.apply(dirs, config.moduleDirectories);
+            settings.modulePaths = findModules(dirs);
+        }
+        else
+            settings.modulePaths = findModules(config.moduleDirectories);
+        
+        if(opts.modulePaths && opts.modulePaths[0] !== false)
+            settings.modulePaths.push.apply(settings.modulePaths, opts.modulePaths);
     
-    loadModules(settings.modulePaths, settings.sandbox);
+        settings.sandbox = vm.createContext({
+            $config: config,
+            $data: settings.data,
+            console: console,
+            out: console.log,
+            process: process,
+            require: require
+        });
+        
+        loadModules(settings.modulePaths, settings.sandbox);
+    }
     
     return settings;
 }
@@ -691,6 +701,7 @@ function parseCommandLine(commands)
         parser = require('nomnom'),
         globalOpts,
         jsonOutputOpts,
+        sandboxOpts,
         withClauseOpt,
         commandName,
         commandDesc,
@@ -724,22 +735,6 @@ function parseCommandLine(commands)
             type: 'string',
             'default': '~/.jutil/config'
         },
-        moduleDirectories: {
-            abbr: 'M',
-            full: 'module-dir',
-            metavar: 'DIR',
-            list: true,
-            type: 'string',
-            help: 'Add the given directory as a module path. Any .js files in the directory will be loaded before executing. Specify --no-module-dir to disable module directory loading.'
-        },
-        modulePaths: {
-            abbr: 'm',
-            full: 'module',
-            metavar: 'FILE',
-            list: true,
-            type: 'string',
-            help: 'Load the given JavaScript file before executing.'
-        },
         verbose: {
             abbr: 'v',
             flag: true,
@@ -764,6 +759,25 @@ function parseCommandLine(commands)
             full: 'disable-smart',
             flag: true,
             help: 'Don\'t pretty-print or autopage if stdout is a terminal.'
+        }
+    };
+    
+    sandboxOpts = {
+        moduleDirectories: {
+            abbr: 'M',
+            full: 'module-dir',
+            metavar: 'DIR',
+            list: true,
+            type: 'string',
+            help: 'Add the given directory as a module path. Any .js files in the directory will be loaded before executing. Specify --no-module-dir to disable module directory loading.'
+        },
+        modulePaths: {
+            abbr: 'm',
+            full: 'module',
+            metavar: 'FILE',
+            list: true,
+            type: 'string',
+            help: 'Load the given JavaScript file before executing.'
         }
     };
     
@@ -810,6 +824,9 @@ function parseCommandLine(commands)
             
             if(commandDesc.outputsJSON)
                 shallowCopy(jsonOutputOpts, commandDesc.options);
+            
+            if(commandDesc.needsSandbox)
+                shallowCopy(sandboxOpts, commandDesc.options);
             
             if(commandDesc.hasWithClauseOpt)
                 commandDesc.options.disableWithClause = withClauseOpt;
