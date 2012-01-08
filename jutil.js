@@ -145,14 +145,30 @@ parseCommandLine({
             predicate: {
                 position: 1,
                 required: true,
-                help: 'Predicate to evaluate for each object in loaded JSON. (Required)'
+                help: 'Predicate to evaluate for each object in the loaded JSON. (Required)'
             }
         },
         outputsJSON: true,
         hasWithClauseOpt: true,
         handler: whereCommandHandler
+    },
+    
+    first: {
+        help: 'Iterate over the input, returning the first object that matches the given predicate.',
+        options: {
+            predicate: {
+                position: 1,
+                help: 'Predicate to evaluate for each object in the loaded JSON. If omitted, the first object from the input will be returned.'
+            }
+        },
+        outputsJSON: true,
+        hasWithClauseOpt: true,
+        handler: firstCommandHandler
     }
 });
+
+
+// Basic script command
 
 function scriptCommandHandler(runtimeSettings, config, opts)
 {
@@ -199,12 +215,41 @@ function scriptCommandHandler(runtimeSettings, config, opts)
     return runtimeSettings.data;
 }
 
+
+/// Predicate-based commands (where, first, count)
+
 function whereCommandHandler(runtimeSettings, config, opts)
+{
+    var res = [];
+    
+    runPredicate(runtimeSettings, config, opts, function(match) {
+        res.push(match);
+        return true;
+    });
+    
+    return res;
+}
+
+function firstCommandHandler(runtimeSettings, config, opts)
+{
+    var res;
+
+    if(!opts.predicate)
+        opts.predicate = 'true';
+    
+    runPredicate(runtimeSettings, config, opts, function(match) {
+        res = match;
+        return false;
+    });
+    
+    return res;
+}
+
+function runPredicate(runtimeSettings, config, opts, handleMatch)
 {
     var vm = require('vm'),
         data = runtimeSettings.data,
-        i,
-        res = [];
+        i;
     
     function satisfiesPredicate(str)
     {
@@ -226,14 +271,14 @@ function whereCommandHandler(runtimeSettings, config, opts)
     
     if(Array.isArray(data)) {
         for(i = 0; i < data.length; i++) {
-            if(satisfiesPredicate('$data[' + i + ']'))
-                res.push(data[i]);
+            if(satisfiesPredicate('$data[' + i + ']')) {
+                if(!handleMatch(data[i]))
+                    return;
+            }
         }
     }
     else if(satisfiesPredicate('$data'))
-        res.push(data);
-    
-    return res;
+        handleMatch(data);
 }
 
 
