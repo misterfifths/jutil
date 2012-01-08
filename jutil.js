@@ -186,7 +186,8 @@ if(require.main == module) {
             options: {
                 shaper: {
                     position: 1,
-                    help: 'Expression to evaluate for each object in the loaded JSON.'
+                    required: true,
+                    help: 'Expression to evaluate for each object in the loaded JSON. (Required)'
                 }
             },
             outputsJSON: true,
