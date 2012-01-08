@@ -122,80 +122,7 @@ var fs = require('fs'),
     userConfig,
     sandbox;
 
-var opts = require('nomnom')
-    .script('jutil')
-    .options({
-        script: {
-            position: 0,
-            help: 'Script to run against the loaded JSON; may also be loaded from a file via the -s option.'
-        },
-        prettyPrint: {
-            abbr: 'p',
-            full: 'pretty-print',
-            flag: true,
-            help: 'Pretty-print the output.'
-        },
-        unwrapProperty: {
-            abbr: 'u',
-            metavar: 'KEY',
-            full: 'unwrap-prop',
-            type: 'string',
-            help: 'Operate only against the given property of the loaded JSON.'
-        },
-        autoUnwrap: {
-            abbr: 'a',
-            full: 'auto-unwrap',
-            flag: true,
-            help: 'Attempt to intelligently extract a useful property of the loaded JSON to run against.'
-        },
-        sort: {
-            abbr: 's',
-            flag: true,
-            help: 'Sort keys in the output.'
-        },
-        file: {
-            abbr: 'f',
-            metavar: 'FILE',
-            help: 'Load JSON from the given file instead of reading from stdin.',
-            type: 'string'
-        },
-        scriptPath: {
-            abbr: 'i',
-            full: 'script',
-            metavar: 'FILE',
-            help: 'Load the script to run from the given file instead of the first positional argument.',
-            type: 'string'
-        },
-        configPath: {
-            abbr: 'c',
-            full: 'config',
-            metavar: 'FILE',
-            help: 'Load the given config file. The default is ~/.jutil/config; specify --no-config to use the default configuration.',
-            type: 'string',
-            'default': '~/.jutil/config'
-        },
-        moduleDirectories: {
-            abbr: 'M',
-            full: 'module-dir',
-            metavar: 'DIR',
-            list: true,
-            type: 'string',
-            help: 'Add the given directory as a module path. Any .js files in the directory will be loaded before executing. Specify --no-module-dir to disable module directory loading.'
-        },
-        modulePaths: {
-            abbr: 'm',
-            full: 'module',
-            metavar: 'FILE',
-            list: true,
-            type: 'string',
-            help: 'Load the given JavaScript file before executing.'
-        },
-        verbose: {
-            abbr: 'v',
-            flag: true,
-            help: 'Be verbose about things (e.g. module loading).'
-        }
-    }).parse();
+var opts = parseCommandLine();
 
 configPath = opts.configPath;
 
@@ -410,6 +337,157 @@ if(res !== undefined) {
     fs.write(1, buffer, 0, buffer.length);
 }
 
+//// Command line parsing
+
+function parseCommandLine()
+{
+    var args = process.argv.slice(2),  // remove 'node' and script name
+        defaultCommand = 'script',
+        scriptName = require('path').basename(process.argv[1], '.js'),
+        firstArg = args[0],
+        parser = require('nomnom'),
+        globalOpts,
+        jsonOutputOpts,
+        withClauseOpt,
+        commands,
+        commandName,
+        commandDesc,
+        commandObj;
+
+    // If we weren't invoked as 'jutil', we were called 'j<command name>',
+    // which we massage into the first argument.
+    if(scriptName != 'jutil')
+        args.unshift(scriptName.substr(1));
+    else if(!firstArg ||
+            (firstArg[0] == '-' && firstArg != '-h' && firstArg != '--help'))
+    {
+        // Otherwise, add in the default command 'script', if appropriate:
+        // --help/-h -> no default
+        // no first arg -> default
+        // first arg begins with '-' -> default
+        
+        args.unshift(defaultCommand);
+    }
+    
+    globalOpts = {
+        unwrapProperty: {
+            abbr: 'u',
+            metavar: 'KEY',
+            full: 'unwrap-prop',
+            type: 'string',
+            help: 'Operate only against the given property of the loaded JSON.'
+        },
+        autoUnwrap: {
+            abbr: 'a',
+            full: 'auto-unwrap',
+            flag: true,
+            help: 'Attempt to intelligently extract a useful property of the loaded JSON to run against.'
+        },
+        file: {
+            abbr: 'f',
+            metavar: 'FILE',
+            help: 'Load JSON from the given file instead of reading from stdin.',
+            type: 'string'
+        },
+        configPath: {
+            abbr: 'c',
+            full: 'config',
+            metavar: 'FILE',
+            help: 'Load the given config file. The default is ~/.jutil/config; specify --no-config to use the default configuration.',
+            type: 'string',
+            'default': '~/.jutil/config'
+        },
+        moduleDirectories: {
+            abbr: 'M',
+            full: 'module-dir',
+            metavar: 'DIR',
+            list: true,
+            type: 'string',
+            help: 'Add the given directory as a module path. Any .js files in the directory will be loaded before executing. Specify --no-module-dir to disable module directory loading.'
+        },
+        modulePaths: {
+            abbr: 'm',
+            full: 'module',
+            metavar: 'FILE',
+            list: true,
+            type: 'string',
+            help: 'Load the given JavaScript file before executing.'
+        },
+        verbose: {
+            abbr: 'v',
+            flag: true,
+            help: 'Be verbose about things (e.g. module loading).'
+        }
+    };
+    
+    jsonOutputOpts = {
+        prettyPrint: {
+            abbr: 'p',
+            full: 'pretty-print',
+            flag: true,
+            help: 'Pretty-print the output.'
+        },
+        sort: {
+            abbr: 's',
+            flag: true,
+            help: 'Sort keys in the output.'
+        }
+    };
+    
+    // TODO: implement. Also needs a setting.
+    withClauseOpt = {
+        abbr: 'w',
+        full: 'no-with',
+        flag: true,
+        help: 'Don\'t wrap the script to execute in a "with" clause.'
+    };
+    
+    commands = {
+        script: {
+            help: 'Run a script against the loaded data. Its return value will be printed as JSON.',
+            options: {
+                script: {
+                    position: 1,
+                    help: 'Script to run against the loaded JSON; may also be loaded from a file via the -s option.'
+                }
+            },
+            outputsJSON: true,
+            hasWithClauseOpt: true
+        }
+    };
+    
+    parser.script('jutil');
+    
+    parser
+        .nocommand()
+        .help('Run jutil <command> --help to see command-specific options.\nIf no command is specified, the default is "' + defaultCommand + '".');
+    
+    for(commandName in commands) {
+        if(commands.hasOwnProperty(commandName)) {
+            commandDesc = commands[commandName];
+            commandObj = parser.command(commandName);
+            
+            commandObj.help(commandDesc.help);
+            commandObj.callback(commandDesc.callback);
+            
+            // nomnom seems to freak out if we call options() more than once
+            // on a command object, wo we're gathering all the options in one
+            // place to just make one call.
+            
+            shallowCopy(globalOpts, commandDesc.options);
+            
+            if(commandDesc.outputsJSON)
+                shallowCopy(jsonOutputOpts, commandDesc.options);
+            
+            if(commandDesc.hasWithClauseOpt)
+                commandDesc.options.withClause = withClauseOpt;
+            
+            commandObj.options(commandDesc.options);
+        }
+    }
+    
+    return parser.parse(args);
+}
 
 //// Helpers
 
@@ -419,6 +497,18 @@ function resolvePath(p)
         case '~': return path.join(process.env.HOME, p.substr(1));
         case '/': return p;
         default: return path.join(process.cwd(), p);
+    }
+}
+
+function shallowCopy(source, dest)
+{
+    var keys = Object.keys(source),
+        i,
+        key;
+    
+    for(i = 0; i < keys.length; i++) {
+        key = keys[i];
+        dest[key] = source[key];
     }
 }
 
