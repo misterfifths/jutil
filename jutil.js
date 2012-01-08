@@ -4,7 +4,7 @@
 
 // TODO: how to re-use base for modules?
 
-var config = {
+var defaultConfig = {
     // All files with a .js extension in these directories will be loaded
     // before evaulating the input.
     moduleDirectories: ['~/.jutil/modules'],
@@ -117,77 +117,9 @@ var config = {
 var fs = require('fs'),
     path = require('path'),
     vm = require('vm'),
-    defaultConfigProperties = Object.keys(config),
-    configPath,
-    userConfig,
+    opts = parseCommandLine(),
+    config = loadConfig(defaultConfig, opts.configPath),
     sandbox;
-
-var opts = parseCommandLine();
-
-configPath = opts.configPath;
-
-
-//// Load configuration file
-
-if(configPath) {
-    try {
-        var realConfigPath = resolvePath(configPath),
-            configFile = fs.readFileSync(realConfigPath, 'utf8'),
-            configSandbox = vm.createContext({
-                $config: config,
-                console: console,
-                out: console.log,
-                process: process,
-                require: require
-            });
-        
-        vm.runInContext(configFile, configSandbox, realConfigPath);
-        userConfig = configSandbox.config;
-    }
-    catch(exc) {
-        // It's fine if we didn't find a config file; we'll use the defaults
-        if(exc.code != 'ENOENT') {
-            console.error('Error loading configuration file: ' + exc);
-            process.exit(1);
-        }
-    }
-
-    if(userConfig) {
-        // Validate config file and merge it with the defaults.
-        
-        copyStringArraySetting(userConfig, config, 'moduleDirectories');
-        copyFunctionSetting(userConfig, config, 'prettyPrinter', 2);
-        copyFunctionSetting(userConfig, config, 'jsonParser', 3);
-        copyBooleanSetting(userConfig, config, 'alwaysSort');
-        copyBooleanSetting(userConfig, config, 'alwaysPrettyPrint');
-        copyBooleanSetting(userConfig, config, 'alwaysAutoUnwrap');
-        copyStringArraySetting(userConfig, config, 'autoUnwrapProperties');
-        copyFunctionSetting(userConfig, config, 'autoUnwrapper', 2);
-        
-        if(userConfig.hasOwnProperty('prettyPrintIndent')) {
-            switch(typeof userConfig.prettyPrintIndent) {
-                case 'string':
-                case 'number':
-                    config.prettyPrintIndent = userConfig.prettyPrintIndent;
-                    break;
-                
-                default:
-                    console.warn('Warning: prettyPrintIndent property in config file must be a number or string; ignoring the setting');
-            }
-        }
-        
-        // Copy over any other properties from the config file
-        for(var propName in userConfig) {
-            if(userConfig.hasOwnProperty(propName) &&
-               defaultConfigProperties.indexOf(propName) == -1)
-            {
-                config[propName] = userConfig[propName];
-            }
-        }
-    }
-    else
-        console.warn('Warning: config file must assign to the global "config" var; ignoring the file');
-}
 
 
 //// Merge in command-line options, load files referenced by them
@@ -336,6 +268,88 @@ if(res !== undefined) {
     var buffer = new Buffer(res);
     fs.write(1, buffer, 0, buffer.length);
 }
+
+
+//// Helpers
+
+function resolvePath(p)
+{
+    switch(p.charAt(0)) {
+        case '~': return path.join(process.env.HOME, p.substr(1));
+        case '/': return p;
+        default: return path.join(process.cwd(), p);
+    }
+}
+
+function shallowCopy(source, dest)
+{
+    var keys = Object.keys(source),
+        i,
+        key;
+    
+    for(i = 0; i < keys.length; i++) {
+        key = keys[i];
+        dest[key] = source[key];
+    }
+}
+
+function findModules(dirs)
+{
+    var paths = [],
+        moduleDir,
+        allFiles,
+        i,
+        j,
+        file;
+    
+    for(i = 0; i < dirs.length; i++) {
+        moduleDir = resolvePath(config.moduleDirectories[i]);
+        allFiles = [];
+        
+        try {
+            allFiles = fs.readdirSync(moduleDir);
+        }
+        catch(exc) {
+            // No warning if module directory is nonexistent
+            if(exc.code != 'ENOENT')
+                console.warn('Warning: error reading module directory "' + moduleDir + '": ' + exc);
+        }
+        
+        for(j = 0; j < allFiles.length; j++) {
+            file = allFiles[j];
+            if(path.extname(file).toLowerCase() == '.js')
+                paths.push(path.join(moduleDir, file));
+        }
+    }
+    
+    return paths;
+}
+
+function sortObject(obj)
+{
+    // This relies on the JavaScript interpreter placing some importance
+    // on the order in which keys were added to an object. Luckily V8
+    // does that, at least for now...
+    
+    var sortedKeys, sortedObj, i, key;
+    
+    if(typeof obj != 'object')
+        return obj;
+    
+    if(Array.isArray(obj))
+        return obj.map(sortObject);
+
+    sortedKeys = Object.keys(obj).sort();
+    sortedObj = {};
+
+    for(i = 0; i < sortedKeys.length; i++) {
+        key = sortedKeys[i];
+        sortedObj[key] = sortObject(obj[key]);
+    }
+    
+    return sortedObj;
+}
+
 
 //// Command line parsing
 
@@ -489,85 +503,8 @@ function parseCommandLine()
     return parser.parse(args);
 }
 
-//// Helpers
 
-function resolvePath(p)
-{
-    switch(p.charAt(0)) {
-        case '~': return path.join(process.env.HOME, p.substr(1));
-        case '/': return p;
-        default: return path.join(process.cwd(), p);
-    }
-}
-
-function shallowCopy(source, dest)
-{
-    var keys = Object.keys(source),
-        i,
-        key;
-    
-    for(i = 0; i < keys.length; i++) {
-        key = keys[i];
-        dest[key] = source[key];
-    }
-}
-
-function findModules(dirs)
-{
-    var paths = [],
-        moduleDir,
-        allFiles,
-        i,
-        j,
-        file;
-    
-    for(i = 0; i < dirs.length; i++) {
-        moduleDir = resolvePath(config.moduleDirectories[i]);
-        allFiles = [];
-        
-        try {
-            allFiles = fs.readdirSync(moduleDir);
-        }
-        catch(exc) {
-            // No warning if module directory is nonexistent
-            if(exc.code != 'ENOENT')
-                console.warn('Warning: error reading module directory "' + moduleDir + '": ' + exc);
-        }
-        
-        for(j = 0; j < allFiles.length; j++) {
-            file = allFiles[j];
-            if(path.extname(file).toLowerCase() == '.js')
-                paths.push(path.join(moduleDir, file));
-        }
-    }
-    
-    return paths;
-}
-
-function sortObject(obj)
-{
-    // This relies on the JavaScript interpreter placing some importance
-    // on the order in which keys were added to an object. Luckily V8
-    // does that, at least for now...
-    
-    var sortedKeys, sortedObj, i, key;
-    
-    if(typeof obj != 'object')
-        return obj;
-    
-    if(Array.isArray(obj))
-        return obj.map(sortObject);
-
-    sortedKeys = Object.keys(obj).sort();
-    sortedObj = {};
-
-    for(i = 0; i < sortedKeys.length; i++) {
-        key = sortedKeys[i];
-        sortedObj[key] = sortObject(obj[key]);
-    }
-    
-    return sortedObj;
-}
+//// Configuration file handling
 
 function copyStringArraySetting(userConfig, config, name)
 {
@@ -615,6 +552,81 @@ function copyBooleanSetting(userConfig, config, name)
         else
             console.warn('Warning: ' + name + ' property in config file must be a boolean; ignoring the setting');
     }
+}
+
+function loadConfig(defaultConfig, configPath)
+{
+    var realConfigPath,
+        configFile,
+        configSandbox,
+        propName,
+        defaultConfigProperties,
+        userConfig,
+        config = {};
+        
+    shallowCopy(defaultConfig, config);
+
+    if(!configPath)
+        return config;
+
+    try {
+        realConfigPath = resolvePath(configPath);
+        configFile = fs.readFileSync(realConfigPath, 'utf8');
+        configSandbox = vm.createContext({
+            console: console,
+            out: console.log,
+            process: process,
+            require: require
+        });
+        
+        vm.runInContext(configFile, configSandbox, realConfigPath);
+        userConfig = configSandbox.config;
+    }
+    catch(exc) {
+        // It's fine if we didn't find a config file; we'll use the defaults
+        if(exc.code != 'ENOENT') {
+            console.error('Error loading configuration file: ' + exc);
+            process.exit(1);
+        }
+    }
+
+    if(userConfig) {
+        // Validate config file and merge it with the defaults.
+        
+        copyStringArraySetting(userConfig, config, 'moduleDirectories');
+        copyFunctionSetting(userConfig, config, 'prettyPrinter', 2);
+        copyFunctionSetting(userConfig, config, 'jsonParser', 3);
+        copyBooleanSetting(userConfig, config, 'alwaysSort');
+        copyBooleanSetting(userConfig, config, 'alwaysPrettyPrint');
+        copyBooleanSetting(userConfig, config, 'alwaysAutoUnwrap');
+        copyStringArraySetting(userConfig, config, 'autoUnwrapProperties');
+        copyFunctionSetting(userConfig, config, 'autoUnwrapper', 2);
+        
+        if(userConfig.hasOwnProperty('prettyPrintIndent')) {
+            switch(typeof userConfig.prettyPrintIndent) {
+                case 'string':
+                case 'number':
+                    config.prettyPrintIndent = userConfig.prettyPrintIndent;
+                    break;
+                
+                default:
+                    console.warn('Warning: prettyPrintIndent property in config file must be a number or string; ignoring the setting');
+            }
+        }
+        
+        // Copy over any other properties from the config file
+        for(propName in userConfig) {
+            if(userConfig.hasOwnProperty(propName) &&
+               !defaultConfig.hasOwnProperty(propName))
+            {
+                config[propName] = userConfig[propName];
+            }
+        }
+    }
+    else
+        console.warn('Warning: config file must assign to the global "config" var; ignoring the file');
+    
+    return config;
 }
 
 })();
