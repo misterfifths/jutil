@@ -11,7 +11,10 @@
     "files": [ "jutil.js" ],
     "main": "./jutil",
     "bin": {
-        "jutil": "./jutil.js"
+        "jutil": "./jutil.js",
+        "jwhere": "./jutil.js",
+        "jfirst": "./jutil.js",
+        "jcount": "./jutil.js"
     },
     "dependencies": {
         "nomnom": "1.5.x"
