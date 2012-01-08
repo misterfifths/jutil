@@ -373,23 +373,45 @@ function propsCommandHandler(runtimeSettings, config, opts)
 {
     function getKeyPath(obj, path)
     {
-        var i = 0,
-            pathComponent;
-    
-        path = path.split('.');
-        while(i < path.length) {
-            if(obj === null || obj === undefined)
-                return undefined;
+        var dotIdx,
+            pathComponent,
+            arrayMap;
         
-            pathComponent = path[i];
-            if(!obj.hasOwnProperty(pathComponent))
-                return undefined;
+        // We're done; obj is the value we want
+        if(path === undefined)
+            return { value: obj };
+        
+        // Can't go any further; we didn't succeed
+        if(obj === null || obj === undefined)
+            return undefined;
+        
+        // Traverse arrays by mapping the key path getter over every element
+        if(Array.isArray(obj)) {
+            arrayMap = obj.map(function(o) {
+                var res = getKeyPath(o, path);
+                if(res)
+                    return res.value;
+                
+                return {};
+            });
             
-            obj = obj[pathComponent];
-            i++;
+            return { value: arrayMap };
         }
         
-        return { value: obj };
+        dotIdx = path.indexOf('.');
+        if(dotIdx == -1) {
+            pathComponent = path;
+            path = undefined;
+        }
+        else {
+            pathComponent = path.substring(0, dotIdx);
+            path = path.substring(dotIdx + 1);
+        }
+        
+        if(!obj.hasOwnProperty(pathComponent))
+            return undefined;
+        
+        return getKeyPath(obj[pathComponent], path);
     }
     
     function setKeyPath(obj, path, value)
