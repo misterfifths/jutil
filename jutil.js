@@ -179,6 +179,19 @@ if(require.main == module) {
             outputsJSON: false,
             hasWithClauseOpt: true,
             handler: countCommandHandler
+        },
+        
+        select: {
+            help: 'Iterate over the input, accumulating the result of the given expression for each object.',
+            options: {
+                shaper: {
+                    position: 1,
+                    help: 'Expression to evaluate for each object in the loaded JSON.'
+                }
+            },
+            outputsJSON: true,
+            hasWithClauseOpt: true,
+            handler: selectCommandHandler
         }
     });
 }
@@ -238,7 +251,7 @@ function whereCommandHandler(runtimeSettings, config, opts)
 {
     var res = [];
     
-    runPredicate(runtimeSettings, config, opts, function(match) {
+    runPredicate(runtimeSettings, opts, function(match) {
         res.push(match);
         return true;
     });
@@ -253,7 +266,7 @@ function firstCommandHandler(runtimeSettings, config, opts)
     if(!opts.predicate)
         opts.predicate = 'true';
     
-    runPredicate(runtimeSettings, config, opts, function(match) {
+    runPredicate(runtimeSettings, opts, function(match) {
         res = match;
         return false;
     });
@@ -268,7 +281,7 @@ function countCommandHandler(runtimeSettings, config, opts)
     if(!opts.predicate)
         opts.predicate = 'true';
     
-    runPredicate(runtimeSettings, config, opts, function(match) {
+    runPredicate(runtimeSettings, opts, function(match) {
         res++;
         return true;
     });
@@ -276,22 +289,22 @@ function countCommandHandler(runtimeSettings, config, opts)
     process.stdout.write(res.toString() + '\n');
 }
 
-function runPredicate(runtimeSettings, config, opts, handleMatch)
+function mapOverInput(expr, runtimeSettings, handleOne)
 {
     var vm = require('vm'),
         data = runtimeSettings.data,
         i;
     
-    function satisfiesPredicate(str)
+    function applyToValue(valueStr)
     {
         // TODO: if the array contains undefined or null, this gets funky.
         // Function.apply() with one of those turns 'this' into the global
         // object, which is not what was intended, certainly.
         var script = '(function() { ';
         if(runtimeSettings.withClause) script += 'with(this) { ';
-        script += 'return !!(' + opts.predicate + ');';
+        script += 'return (' + expr + ');';
         if(runtimeSettings.withClause) script += ' }';
-        script += ' }).apply(' + str + ');';
+        script += ' }).apply(' + valueStr + ');';
         
         return vm.runInContext(script, runtimeSettings.sandbox, runtimeSettings.scriptPath);
     }
@@ -302,14 +315,42 @@ function runPredicate(runtimeSettings, config, opts, handleMatch)
     
     if(Array.isArray(data)) {
         for(i = 0; i < data.length; i++) {
-            if(satisfiesPredicate('$data[' + i + ']')) {
-                if(!handleMatch(data[i]))
-                    return;
-            }
+            if(!handleOne(data[i], applyToValue('$data[' + i + ']')))
+                return;
         }
     }
-    else if(satisfiesPredicate('$data'))
-        handleMatch(data);
+    else
+        handleOne(data, applyToValue('$data'));
+}
+
+function runPredicate(runtimeSettings, opts, handleMatch)
+{
+    var expr = '!!(' + opts.predicate + ')',
+        res = [];
+    
+    mapOverInput(expr, runtimeSettings, function(raw, matched) {
+        if(matched)
+            return handleMatch(raw);
+        
+        return true;
+    });
+}
+
+
+//// Shaping commands (select, props)
+
+function selectCommandHandler(runtimeSettings, config, opts)
+{
+    // TODO: maybe an option to omit falsy results
+
+    var res = [];
+    
+    mapOverInput(opts.shaper, runtimeSettings, function(raw, shaped) {
+        res.push(shaped);
+        return true;
+    });
+    
+    return res;
 }
 
 

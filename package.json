@@ -14,7 +14,8 @@
         "jutil": "./jutil.js",
         "jwhere": "./jutil.js",
         "jfirst": "./jutil.js",
-        "jcount": "./jutil.js"
+        "jcount": "./jutil.js",
+        "jselect": "./jutil.js"
     },
     "dependencies": {
         "nomnom": "1.5.x"
