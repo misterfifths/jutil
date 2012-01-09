@@ -7,7 +7,7 @@ Well, **jutil** is (probably) for you! It runs on [node.js](http://nodejs.org) a
 
 Say what now?
 ------------
-In its simplest form, jutil accepts JSON-formatted data, provides you an environment to run a script against it, and prints out the return value of that script. For instance:
+In its simplest form, jutil accepts JSON-formatted data, provides you an environment to run some JavaScript against it, and prints out the return value of that script. For instance:
 
 ````sh
 $ curl -s http://graph.facebook.com/4 | jutil 'return name'
@@ -33,11 +33,11 @@ But of course, there's much more. This is just the simplest of jutil's commands.
 Commands
 ========
 
-Each of these commands can be run in two ways: `jutil <command>` or via an alias, `j<command>`. Aliases are installed for each command by the npm package, and we will refer to them via those aliases below. You can see detailed help on the options for each command by running them the `--help` or `-h` command-line argument.
+Each of these commands can be run in two ways: `jutil <command>` or via an alias, `j<command>`. Aliases are installed for each command by the npm package, and we will refer to them via those aliases below. You can see detailed help on the options for each command by running them with the `--help` or `-h` command-line argument.
 
 jutil
 -----
-The default behavior, as discussed above, runs a script you provide (which is optional) and prints its result. The script is evaluated in an enviroment where `this` refers to the loaded data (after any unwrapping). It is also, by default, wrapped inside `with(this) { ... }`, so that properties from the data can be referenced without qualification. This may be troublesome if the data has propertie names that hide helpful globals. The `--disable-with` or `-W` command-line options disable this feature.
+The default behavior, as discussed above, runs a script you provide (which is optional) and prints its result. The script is evaluated in an enviroment where `this` refers to the loaded data (after any unwrapping). It is also, by default, wrapped inside `with(this) { ... }`, so that properties from the data can be referenced without qualification. This may be troublesome if the data has property names that hide helpful globals. The `--disable-with` or `-W` command-line options disable this feature.
 
 You may have noticed the returned JSON in the second sample above is formatted. By default, if jutil's stdout is a terminal, the output will be pretty-printed and sent to your pager if it is larger than your screen. To disable this feature, use the `--disable-smart` or `-S` options.
 
