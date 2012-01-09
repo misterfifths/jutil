@@ -941,7 +941,9 @@ function loadConfig(defaultConfig, configPath)
     }
     catch(exc) {
         // It's fine if we didn't find a config file; we'll use the defaults
-        if(exc.code != 'ENOENT') {
+        if(exc.code == 'ENOENT')
+            return config;
+        else {
             console.error('Error loading configuration file: ' + exc);
             process.exit(1);
         }
