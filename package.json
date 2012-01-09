@@ -1,6 +1,6 @@
 {
     "name": "jutil",
-    "description": "Command-line utility for manipulating JSON",
+    "description": "Command-line utilities for manipulating JSON",
     "homepage": "http://github.com/misterfifths/jutil",
     "version": "0.0.1",
     "author": "Tim Clem",
