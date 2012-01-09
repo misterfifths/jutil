@@ -542,6 +542,8 @@ function formatCommandHandler(runtimeSettings, config, opts)
     if(!Array.isArray(data))
         data = [data];
     
+    // TODO: might be nice to provide autopaging here, like for the commands
+    // that output JSON.
     for(i = 0; i < data.length; i++) {
         replacer = replacerFactory(data, i);
         process.stdout.write(format.replace(re, replacer) + '\n');
