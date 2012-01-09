@@ -220,6 +220,21 @@ if(require.main == module) {
             needsSandbox: false,
             hasWithClauseOpt: false,
             handler: propsCommandHandler
+        },
+        
+        format: {
+            help: 'Iterate over the input, printing the result of the given format string for each object.',
+            options: {
+                format: {
+                    position: 1,
+                    required: true,
+                    help: 'The format string to use. Tokens are of the form %property or %{expression}. (Required)'
+                }
+            },
+            outputsJSON: false,
+            needsSandbox: true,
+            hasWithClauseOpt: true,
+            handler: formatCommandHandler
         }
     });
 }
@@ -330,7 +345,7 @@ function mapOverInput(expr, runtimeSettings, handleOne)
         if(runtimeSettings.withClause) script += ' }';
         script += ' }).apply(' + valueStr + ');';
         
-        return vm.runInContext(script, runtimeSettings.sandbox, runtimeSettings.scriptPath);
+        return vm.runInContext(script, runtimeSettings.sandbox);
     }
     
     var vm = require('vm'),
@@ -364,7 +379,7 @@ function runPredicate(runtimeSettings, opts, handleMatch)
 }
 
 
-//// Shaping commands (select, props)
+//// Shaping commands (select, props, format)
 
 function selectCommandHandler(runtimeSettings, config, opts)
 {
@@ -488,6 +503,49 @@ function propsCommandHandler(runtimeSettings, config, opts)
         return data.map(shapeObj);
     
     return shapeObj(data);
+}
+
+function formatCommandHandler(runtimeSettings, config, opts)
+{
+    function replacerFactory(data, dataIdx) {
+        return function(match, unbracketed, bracketed) {
+            // Short-circuit this case; this can only be a property name
+            // of the object
+            if(unbracketed)
+                return data[dataIdx][unbracketed];
+            
+            // Otherwise, evaluate the expression
+            // TODO: slight modifications on this are used in a few places;
+            // would be good to make this a function.
+            var script = '(function() { ';
+            if(runtimeSettings.withClause) script += 'with(this) { ';
+            script += 'return (' + bracketed + ').toString();';
+            if(runtimeSettings.withClause) script += ' }';
+            script += ' }).apply($data[' + dataIdx + ']);';
+            
+            return vm.runInContext(script, runtimeSettings.sandbox);
+        }
+    }
+
+    /*
+    bracketed: /%\{(?=[^}]*\})([^}]*)\}/
+    unbracketed: /%([\w$]+)/
+    */
+
+    var vm = require('vm'),
+        format = opts.format,
+        re = /%([\w%]+)|%\{(?=[^}]*\})([^}]*)\}/g,
+        data = runtimeSettings.data,
+        i,
+        replacer;
+    
+    if(!Array.isArray(data))
+        data = [data];
+    
+    for(i = 0; i < data.length; i++) {
+        replacer = replacerFactory(data, i);
+        process.stdout.write(format.replace(re, replacer) + '\n');
+    }
 }
 
 
