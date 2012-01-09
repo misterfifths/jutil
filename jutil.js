@@ -809,6 +809,7 @@ function parseCommandLine(commands)
         },
         sort: {
             abbr: 's',
+            full: 'sort-keys',
             flag: true,
             help: 'Sort keys in the output.'
         },
