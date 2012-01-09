@@ -3,7 +3,7 @@
 
 Do a lot of testing of JSON APIs from the command line? Insulted by doing mindless greps against structured data? Fingers sore from typing `| python -mjson.tool`?
 
-Well, **jutil** is (probably) for you!
+Well, **jutil** is (probably) for you! It runs on [node.js](http://nodejs.org) and you can install it via [npm](http://npmjs.org/) with `npm -g install jutil`.
 
 Say what now?
 ------------
