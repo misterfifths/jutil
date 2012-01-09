@@ -8,12 +8,14 @@ Well, **jutil** is (possibly) for you!
 Say what now?
 ------------
 In its simplest form, jutil accepts JSON-formatted data, provides you an environment to run a script against it, and prints out the return value of that script. For instance:
+
 ````
 $ curl -s http://graph.facebook.com/4 | jutil 'return name'
 "Mark Zuckerberg"
 ````
 
 Or, if your script returns an object, it is formatted as JSON:
+
 ```
 $ curl -s https://api.twitter.com/1/statuses/public_timeline.json | jutil 'return this[0].user'
 {
