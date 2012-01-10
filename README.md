@@ -45,14 +45,14 @@ jwhere
 ------
 This tool iterates over the elements in the input and returns any objects that match the predicate you provide. If the input is not an array, it is converted to a one-element array. If no objects in the input match, the empty array `[]` is returned.
 
-The predicate runs in a similar context to that of scripts for `jutil`, except that it must be an expression and not a full program. The result of the predicate expression will be converted to a boolean, so JavaScript's notorious rules about 'falsiness' are in play. Let's look at some examples:
+The predicate runs in a similar context to that of scripts for `jutil`, except that it must be an expression and not a full program. The result of the predicate expression will be converted to a boolean, so JavaScript's notorious rules about "falsiness" are in play. Let's look at some examples:
 
 ````sh
 $ echo '[ {"x": 1, "y": 2}, {"x": 2, "y": 3}, {"x": 3, "y": 6} ]' | jwhere 'x + y > 4'
 [
     {
         "x": 2,
-        "y": "3"
+        "y": 3
     },
     {
         "x": 3,
