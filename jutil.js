@@ -229,6 +229,18 @@ if(require.main == module) {
                     position: 1,
                     required: true,
                     help: 'The format string to use. Tokens are of the form %property or %{expression}. (Required)'
+                },
+                header: {
+                    abbr: 'H',
+                    metavar: 'FORMAT',
+                    help: 'A header to print before the main output; same token syntax as the format string and is evaluated against the data as a whole.',
+                    type: 'string'
+                },
+                footer: {
+                    abbr: 'F',
+                    metavar: 'FORMAT',
+                    help: 'A footer to print after the main output; same token syntax as the format string and is evaluated against the data as a whole.',
+                    type: 'string'
                 }
             },
             outputsJSON: false,
@@ -507,12 +519,12 @@ function propsCommandHandler(runtimeSettings, config, opts)
 
 function formatCommandHandler(runtimeSettings, config, opts)
 {
-    function replacerFactory(data, dataIdx) {
+    function replacerFactory(data, dataString) {
         return function(match, unbracketed, bracketed) {
             // Short-circuit this case; this can only be a property name
             // of the object
             if(unbracketed)
-                return data[dataIdx][unbracketed];
+                return data[unbracketed];
             
             // Otherwise, evaluate the expression
             // TODO: slight modifications on this are used in a few places;
@@ -521,7 +533,7 @@ function formatCommandHandler(runtimeSettings, config, opts)
             if(runtimeSettings.withClause) script += 'with(this) { ';
             script += 'return (' + bracketed + ').toString();';
             if(runtimeSettings.withClause) script += ' }';
-            script += ' }).apply($data[' + dataIdx + ']);';
+            script += ' }).apply(' + dataString + ');';
             
             return vm.runInContext(script, runtimeSettings.sandbox);
         };
@@ -544,9 +556,24 @@ function formatCommandHandler(runtimeSettings, config, opts)
     
     // TODO: might be nice to provide autopaging here, like for the commands
     // that output JSON.
+
+    if(opts.header) {
+        replacer = replacerFactory(data, '$data');
+
+        if(opts.header)
+            process.stdout.write(opts.header.replace(re, replacer) + '\n');
+    }
+
     for(i = 0; i < data.length; i++) {
-        replacer = replacerFactory(data, i);
+        replacer = replacerFactory(data[i], '$data[' + i + ']');  // TODO: $data[0] is invalid if data was a single object!
         process.stdout.write(format.replace(re, replacer) + '\n');
+    }
+
+    if(opts.footer) {
+        replacer = replacerFactory(data, '$data');
+
+        if(opts.footer)
+            process.stdout.write(opts.footer.replace(re, replacer) + '\n');
     }
 }
 
