@@ -530,13 +530,17 @@ function formatCommandHandler(runtimeSettings, config, opts)
             // Otherwise, evaluate the expression
             // TODO: slight modifications on this are used in a few places;
             // would be good to make this a function.
-            var script = '(function() { ';
+            var res,
+                script = '(function() { ';
             if(runtimeSettings.withClause) script += 'with(this) { ';
-            script += 'return (' + bracketed + ').toString();';
+            script += 'return (' + bracketed + ');';
             if(runtimeSettings.withClause) script += ' }';
             script += ' }).apply(' + dataString + ');';
-            
-            return vm.runInContext(script, runtimeSettings.sandbox);
+
+            res = vm.runInContext(script, runtimeSettings.sandbox);
+            if(res === null) return 'null';
+            if(res === undefined) return 'undefined';
+            return res.toString();
         };
     }
 
@@ -545,7 +549,7 @@ function formatCommandHandler(runtimeSettings, config, opts)
         // Thanks, JS, for not having lookbehinds in your regexes.
         return format.replace(/(\\)?\\n/gm, function(match, escape) { return escape ? '\\n' : '\n'; })
                      .replace(/(\\)?\\t/gm, function(match, escape) { return escape ? '\\t' : '\t'; })
-                     .replace(/(\\)?\\r/gm, function(match, escape) { return escape ? '\\r' : '\r'; })
+                     .replace(/(\\)?\\r/gm, function(match, escape) { return escape ? '\\r' : '\r'; });
     }
 
     /*
@@ -560,9 +564,6 @@ function formatCommandHandler(runtimeSettings, config, opts)
         i,
         replacer;
     
-    if(!Array.isArray(data))
-        data = [data];
-    
     // TODO: might be nice to provide autopaging here, like for the commands
     // that output JSON.
 
@@ -573,8 +574,14 @@ function formatCommandHandler(runtimeSettings, config, opts)
             process.stdout.write(prepareFormatString(opts.header).replace(re, replacer) + '\n');
     }
 
-    for(i = 0; i < data.length; i++) {
-        replacer = replacerFactory(data[i], '$data[' + i + ']');  // TODO: $data[0] is invalid if data was a single object!
+    if(Array.isArray(data)) {
+        for(i = 0; i < data.length; i++) {
+            replacer = replacerFactory(data[i], '$data[' + i + ']');
+            process.stdout.write(prepareFormatString(format).replace(re, replacer) + '\n');
+        }
+    }
+    else {
+        replacer = replacerFactory(data, '$data');
         process.stdout.write(prepareFormatString(format).replace(re, replacer) + '\n');
     }
 
