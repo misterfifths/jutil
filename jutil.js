@@ -542,9 +542,10 @@ function formatCommandHandler(runtimeSettings, config, opts)
 
     function prepareFormatString(format)
     {
-        return format.replace(/([^\\])\\n/gm, '$1\n')
-                     .replace(/([^\\])\\t/gm, '$1\t')
-                     .replace(/([^\\])\\r/gm, '$1\r');  // you poor Windows bastards
+        // Thanks, JS, for not having lookbehinds in your regexes.
+        return format.replace(/(\\)?\\n/gm, function(match, escape) { return escape ? '\\n' : '\n'; })
+                     .replace(/(\\)?\\t/gm, function(match, escape) { return escape ? '\\t' : '\t'; })
+                     .replace(/(\\)?\\r/gm, function(match, escape) { return escape ? '\\r' : '\r'; })
     }
 
     /*
