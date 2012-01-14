@@ -524,7 +524,7 @@ function formatCommandHandler(runtimeSettings, config, opts)
             script += ' }).apply($data[' + dataIdx + ']);';
             
             return vm.runInContext(script, runtimeSettings.sandbox);
-        }
+        };
     }
 
     /*
