@@ -519,7 +519,8 @@ function propsCommandHandler(runtimeSettings, config, opts)
 
 function formatCommandHandler(runtimeSettings, config, opts)
 {
-    function replacerFactory(data, dataString) {
+    function replacerFactory(data, dataString)
+    {
         return function(match, unbracketed, bracketed) {
             // Short-circuit this case; this can only be a property name
             // of the object
@@ -539,6 +540,13 @@ function formatCommandHandler(runtimeSettings, config, opts)
         };
     }
 
+    function prepareFormatString(format)
+    {
+        return format.replace(/([^\\])\\n/gm, '$1\n')
+                     .replace(/([^\\])\\t/gm, '$1\t')
+                     .replace(/([^\\])\\r/gm, '$1\r');  // you poor Windows bastards
+    }
+
     /*
     bracketed: /%\{(?=[^}]*\})([^}]*)\}/
     unbracketed: /%([\w$]+)/
@@ -546,7 +554,7 @@ function formatCommandHandler(runtimeSettings, config, opts)
 
     var vm = require('vm'),
         format = opts.format,
-        re = /%([\w%]+)|%\{(?=[^}]*\})([^}]*)\}/g,
+        re = /%([\w%]+)|%\{(?=[^}]*\})([^}]*)\}/gm,
         data = runtimeSettings.data,
         i,
         replacer;
@@ -561,19 +569,19 @@ function formatCommandHandler(runtimeSettings, config, opts)
         replacer = replacerFactory(data, '$data');
 
         if(opts.header)
-            process.stdout.write(opts.header.replace(re, replacer) + '\n');
+            process.stdout.write(prepareFormatString(opts.header).replace(re, replacer) + '\n');
     }
 
     for(i = 0; i < data.length; i++) {
         replacer = replacerFactory(data[i], '$data[' + i + ']');  // TODO: $data[0] is invalid if data was a single object!
-        process.stdout.write(format.replace(re, replacer) + '\n');
+        process.stdout.write(prepareFormatString(format).replace(re, replacer) + '\n');
     }
 
     if(opts.footer) {
         replacer = replacerFactory(data, '$data');
 
         if(opts.footer)
-            process.stdout.write(opts.footer.replace(re, replacer) + '\n');
+            process.stdout.write(prepareFormatString(opts.footer).replace(re, replacer) + '\n');
     }
 }
 
