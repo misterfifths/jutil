@@ -241,6 +241,12 @@ if(require.main == module) {
                     metavar: 'FORMAT',
                     help: 'A footer to print after the main output; same token syntax as the format string and is evaluated against the data as a whole.',
                     type: 'string'
+                },
+                noNewline: {
+                    abbr: 'n',
+                    full: 'no-newline',
+                    flag: true,
+                    help: 'Do not print trailing newline characters after every line.'
                 }
             },
             outputsJSON: false,
@@ -562,7 +568,8 @@ function formatCommandHandler(runtimeSettings, config, opts)
         re = /%([\w%]+)|%\{(?=[^}]*\})([^}]*)\}/gm,
         data = runtimeSettings.data,
         i,
-        replacer;
+        replacer,
+        newline = opts.noNewline ? '' : '\n';
     
     // TODO: might be nice to provide autopaging here, like for the commands
     // that output JSON.
@@ -571,25 +578,25 @@ function formatCommandHandler(runtimeSettings, config, opts)
         replacer = replacerFactory(data, '$data');
 
         if(opts.header)
-            process.stdout.write(prepareFormatString(opts.header).replace(re, replacer) + '\n');
+            process.stdout.write(prepareFormatString(opts.header).replace(re, replacer) + newline);
     }
 
     if(Array.isArray(data)) {
         for(i = 0; i < data.length; i++) {
             replacer = replacerFactory(data[i], '$data[' + i + ']');
-            process.stdout.write(prepareFormatString(format).replace(re, replacer) + '\n');
+            process.stdout.write(prepareFormatString(format).replace(re, replacer) + newline);
         }
     }
     else {
         replacer = replacerFactory(data, '$data');
-        process.stdout.write(prepareFormatString(format).replace(re, replacer) + '\n');
+        process.stdout.write(prepareFormatString(format).replace(re, replacer) + newline);
     }
 
     if(opts.footer) {
         replacer = replacerFactory(data, '$data');
 
         if(opts.footer)
-            process.stdout.write(prepareFormatString(opts.footer).replace(re, replacer) + '\n');
+            process.stdout.write(prepareFormatString(opts.footer).replace(re, replacer) + newline);
     }
 }
 
