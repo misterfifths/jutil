@@ -111,6 +111,40 @@ $ echo '[ {"x": 1, "y": 2}, {"x": 2, "y": 3} ]' | jselect '{x: x, y: y, sum: x +
 ]
 ````
 
+jsort
+-----
+As the name implies, this one sorts the objects in the input data via a given sort key. If the input is not an array, it is returned unaltered. Here's a trivial example:
+
+````sh
+$ echo '[ {"x": 10, "y": 2}, {"x": 2, "y": 3} ]' | jsort 'x + y'
+[
+    {
+        "x": 2,
+        "y": 3
+    },
+    {
+        "x": 10,
+        "y": 2
+    }
+]
+````
+
+By default, objects are sorted by your key expression in ascending order. Pass `-r` for descending. If your sort key is a string, it is compared in a case-sensitive manner by default--`-i` makes it case-insensitive.
+
+There is nothing stopping you from returning a more complicated object as your sort key; in fact, if you omit a sort key expression, the objects in the input will be used wholesale as the sort keys. However, since sort keys are compared using native operators, the result with sort keys that are objects will be meaningless.
+
+The behavior with no sort key expression can be useful, however, if your data is an array of straight strings or numbers:
+
+````sh
+$ echo '[5, 2, 6, 10]' | jsort -r
+[
+    10,
+    6,
+    5,
+    2
+]
+````
+
 jprops
 ------
 This tool is intended to streamline the most common use for `jselect`, selecting only a subset of properties from objects in the data. `jprops` takes a list of property mappings, of the form `[to=]from`, where `to` is the property in the result and `from` is the property in the input. If `to` is ommitted, it defaults to `from`. Note that either of these mapping components can have dots in them, to specify an object traversal.
