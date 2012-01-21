@@ -1026,9 +1026,9 @@ function parseCommandLine(commands)
             wrap = require('wordwrap')(width);
 
         str = wrap(str) + '\n';
-        code == code || 0;
+        code = code || 0;
 
-        if(code == 0)
+        if(code === 0)
             process.stdout.write(str);
         else
             process.stderr.write(str);
