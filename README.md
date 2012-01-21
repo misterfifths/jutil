@@ -221,7 +221,8 @@ The pipe is your friend.
 Advanced Usage
 ==============
 
-Config files <a name="configFiles" />
+<a name="configFiles" />
+Config files
 ------------
 You can set up a variety of default options and tweak the behavior of jutil with a configuration file, which lives at `~/.jutil/config` by default. To specify another configuration file to load, use the `-c` option to any tool.
 
@@ -233,7 +234,8 @@ var config = { alwaysSortKeys: true };
 
 You can find a complete list of the options available in a configuration file (and their default values) at the top of [the main source file](https://github.com/misterfifths/jutil/blob/master/jutil.js#L5).
 
-Unwrapping <a name="unwrapping" />
+<a name="unwrapping" />
+Unwrapping
 ----------
 Many JSON APIs wrap their real payload in an object with metadata -- pagination information or rate limits, for example. And metadata aside, most such APIs wrap arrays in dummy objects to sidestep [this nasty issue](http://haacked.com/archive/2008/11/20/anatomy-of-a-subtle-json-vulnerability.aspx). But more often than not, all you care about as far as manipulation is concerned is the actual payload.
 
