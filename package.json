@@ -17,7 +17,8 @@
         "jcount": "./jutil.js",
         "jselect": "./jutil.js",
         "jprops": "./jutil.js",
-        "jformat": "./jutil.js"
+        "jformat": "./jutil.js",
+        "jsort": "./jutil.js"
     },
     "dependencies": {
         "nomnom": "1.5.x"
