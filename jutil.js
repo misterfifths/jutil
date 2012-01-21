@@ -13,24 +13,39 @@ var defaultConfig = {
     prettyPrintIndent: 4,
     
     // The function used to serialize an object into a human-readable
-    // JSON string. The function takes two arguments:
+    // string (typically JSON, but if you override inputParser below,
+    // could really be anything you want). The function takes two
+    // arguments:
     // config: the current application configuration, as specified in
     // the configuration file
     // obj: the object to format
-    // Return the formatted JSON string.
+    // Return a 'pretty' string representation of obj.
     prettyPrinter: function(config, obj) {
         return JSON.stringify(obj, null, config.prettyPrintIndent) + '\n';
     },
+
+    // The function used to serialize an object into a string when
+    // pretty-printing is off (typically JSON, but really whatever,
+    // as long as inputParser below understands it). The function
+    // takes two arguments:
+    // config: the current application configuration, as specified in
+    // the configuration file
+    // obj: the object to format
+    // Return the string representation of obj.
+    unprettyPrinter: function(config, obj) {
+        return JSON.stringify(obj);
+    },
     
-    // The function used to deserialize a JSON string into an object.
+    // The function used to deserialize the input string (typically JSON,
+    // but you could override this to handle whatever) into an object.
     // The function takes two arguments:
     // config: the current application configuration, as specified in
     // the configuration file
-    // json: the JSON string to parse.
+    // input: the string to parse.
     // Return the deserialized object, or throw an exception if the
-    // given string is not valid JSON.
-    jsonParser: function(config, json) {
-        return JSON.parse(json);
+    // given string is not valid.
+    inputParser: function(config, input) {
+        return JSON.parse(input);
     },
     
     // Always pretty-print the output. Not recommend (as it's a waste of
@@ -54,7 +69,7 @@ var defaultConfig = {
     // property with a name that hides some useful variable or function.
     disableWithClause: false,
     
-    // Always attempt to extract a useful property of the incoming JSON.
+    // Always attempt to extract a useful property of the incoming data.
     // This passes the incoming data through the autoUnwrapper function
     // before running the script against it.
     alwaysAutoUnwrap: false,
@@ -64,10 +79,10 @@ var defaultConfig = {
     autoUnwrapProperties: [],
     
     // The function used to attempt to extract a useful property of the
-    // incoming JSON. The function takes 2 arguments:
+    // incoming data. The function takes 2 arguments:
     // config: the current application configuration, as specified in
     // the configuration file
-    // obj: the object parsed from the incoming JSON
+    // obj: the object parsed from the incoming data
     // It should return a "useful" property from obj (or obj itself if
     // appropriate). "Useful" can mean many things, but really this is
     // intended to handle JSON APIs that returned arrays wrapped in
@@ -128,11 +143,11 @@ var defaultConfig = {
 if(require.main == module) {
     parseCommandLine({
         script: {
-            help: 'Run a script against the loaded data. Its return value will be printed as JSON.',
+            help: 'Run a script against the loaded data, outputting its return value.',
             options: {
                 script: {
                     position: 1,
-                    help: 'Script to run against the loaded JSON; may also be loaded from a file via the -i option.'
+                    help: 'Script to run against the loaded data; may also be loaded from a file via the -i option.'
                 },
                 scriptPath: {
                     abbr: 'i',
@@ -142,7 +157,7 @@ if(require.main == module) {
                     type: 'string'
                 }
             },
-            outputsJSON: true,
+            outputsObject: true,
             needsSandbox: true,
             hasWithClauseOpt: true,
             handler: scriptCommandHandler
@@ -154,10 +169,10 @@ if(require.main == module) {
                 predicate: {
                     position: 1,
                     required: true,
-                    help: 'Predicate to evaluate for each object in the loaded JSON. (Required)'
+                    help: 'Predicate to evaluate for each object in the loaded data. (Required)'
                 }
             },
-            outputsJSON: true,
+            outputsObject: true,
             needsSandbox: true,
             hasWithClauseOpt: true,
             handler: whereCommandHandler
@@ -168,10 +183,10 @@ if(require.main == module) {
             options: {
                 predicate: {
                     position: 1,
-                    help: 'Predicate to evaluate for each object in the loaded JSON. If omitted, the first object from the input will be returned.'
+                    help: 'Predicate to evaluate for each object in the loaded data. If omitted, the first object from the input will be returned.'
                 }
             },
-            outputsJSON: true,
+            outputsObject: true,
             needsSandbox: true,
             hasWithClauseOpt: true,
             handler: firstCommandHandler
@@ -182,10 +197,10 @@ if(require.main == module) {
             options: {
                 predicate: {
                     position: 1,
-                    help: 'Predicate to evaluate for each object in the loaded JSON. If omitted, all objects will be counted.'
+                    help: 'Predicate to evaluate for each object in the loaded data. If omitted, all objects will be counted.'
                 }
             },
-            outputsJSON: false,
+            outputsObject: false,
             needsSandbox: true,
             hasWithClauseOpt: true,
             handler: countCommandHandler
@@ -197,10 +212,10 @@ if(require.main == module) {
                 shaper: {
                     position: 1,
                     required: true,
-                    help: 'Expression to evaluate for each object in the loaded JSON. (Required)'
+                    help: 'Expression to evaluate for each object in the loaded data. (Required)'
                 }
             },
-            outputsJSON: true,
+            outputsObject: true,
             needsSandbox: true,
             hasWithClauseOpt: true,
             handler: selectCommandHandler
@@ -213,10 +228,10 @@ if(require.main == module) {
                     position: 1,
                     list: true,
                     required: true,
-                    help: 'Names of properties to extract from each object in the loaded JSON. These are of the form [[key.]*key=][key.]*key, to follow subobjects and optionally rename them in the output. (At least one is required)'
+                    help: 'Names of properties to extract from each object in the loaded data. These are of the form [[key.]*key=][key.]*key, to follow subobjects and optionally rename them in the output. (At least one is required)'
                 }
             },
-            outputsJSON: true,
+            outputsObject: true,
             needsSandbox: false,
             hasWithClauseOpt: false,
             handler: propsCommandHandler
@@ -249,7 +264,7 @@ if(require.main == module) {
                     help: 'Do not print trailing newline characters after every line.'
                 }
             },
-            outputsJSON: false,
+            outputsObject: false,
             hasSmartOutput: true,  // format doesn't spit out JSON, but we do want its output to be subject to autopaging
             needsSandbox: true,
             hasWithClauseOpt: true,
@@ -574,9 +589,6 @@ function formatCommandHandler(runtimeSettings, config, opts)
         newline = opts.noNewline ? '' : '\n',
         res = '';
     
-    // TODO: might be nice to provide autopaging here, like for the commands
-    // that output JSON.
-
     if(opts.header) {
         replacer = replacerFactory(data, '$data');
 
@@ -616,8 +628,8 @@ function runCommand(commandDesc, opts)
         runtimeSettings = makeRuntimeSettings(commandDesc, config, opts),
         res = commandDesc.handler(runtimeSettings, config, opts);
 
-    if(commandDesc.outputsJSON)
-        outputJSON(res, runtimeSettings, config);
+    if(commandDesc.outputsObject)
+        outputObject(res, runtimeSettings, config);
     else
         outputString(res, runtimeSettings, config);
 }
@@ -638,10 +650,11 @@ function makeRuntimeSettings(commandDesc, config, opts)
         else settings.smartOutput = opts.disableSmartOutput === false || !config.disableSmartOutput;
     }
 
-    if(commandDesc.outputsJSON) {
-        if(opts.prettyPrint === false) {}  // --no-pretty-print
-        else if(opts.prettyPrint || config.alwaysPrettyPrint || settings.smartOutput)
-            settings.prettyPrinter = config.prettyPrinter;
+    if(commandDesc.outputsObject) {
+        if(opts.prettyPrint || config.alwaysPrettyPrint || settings.smartOutput)
+            settings.outputFormatter = config.prettyPrinter;
+        else
+            settings.outputFormatter = config.unprettyPrinter;
     
         if(opts.sort === false) {} // --no-sort
         else if(opts.sort || config.alwaysSort) settings.sort = true;
@@ -667,20 +680,20 @@ function makeRuntimeSettings(commandDesc, config, opts)
         settings.file = '/dev/stdin';
     
     try {
-        settings.json = fs.readFileSync(settings.file, 'utf8');
+        settings.input = fs.readFileSync(settings.file, 'utf8');
     }
     catch(exc) {
-        console.error('Error: Unable to load JSON file "' + settings.file + '": ' + exc);
+        console.error('Error: Unable to load input file "' + settings.file + '": ' + exc);
         process.exit(1);
     }
     
-    settings.jsonParser = config.jsonParser;
+    settings.inputParser = config.inputParser;
     
     try {
-        settings.data = settings.jsonParser(config, settings.json);
+        settings.data = settings.inputParser(config, settings.input);
     }
     catch(exc) {
-        console.error('Error parsing JSON: ' + exc + '.\nInput:\n' + settings.json);
+        console.error('Error parsing input: ' + exc + '.\nInput:\n' + settings.input);
         process.exit(1);
     }
     
@@ -784,7 +797,7 @@ function outputString(str, runtimeSettings, config)
     require('fs').write(process.stdout.fd, buffer, 0, buffer.length);
 }
 
-function outputJSON(obj, runtimeSettings, config)
+function outputObject(obj, runtimeSettings, config)
 {
     if(obj === undefined)
         return;
@@ -793,13 +806,10 @@ function outputJSON(obj, runtimeSettings, config)
         obj = sortObject(obj);
 
     try {
-        if(runtimeSettings.prettyPrinter)
-            obj = runtimeSettings.prettyPrinter(config, obj);
-        else
-            obj = JSON.stringify(obj);
+        obj = runtimeSettings.outputFormatter(config, obj);
     }
     catch(exc) {
-        console.error('Error converting result to JSON: ' + exc);
+        console.error('Error converting result to string: ' + exc);
         process.exit(1);
     }
     
@@ -824,7 +834,7 @@ function parseCommandLine(commands)
         firstArg = args[0],
         parser = require('nomnom'),
         globalOpts,
-        jsonOutputOpts,
+        objectOutputOpts,
         smartOutputOpt,
         sandboxOpts,
         withClauseOpt,
@@ -838,18 +848,18 @@ function parseCommandLine(commands)
             metavar: 'KEY',
             full: 'unwrap-prop',
             type: 'string',
-            help: 'Operate only against the given property of the loaded JSON.'
+            help: 'Operate only against the given property of the loaded data.'
         },
         autoUnwrap: {
             abbr: 'a',
             full: 'auto-unwrap',
             flag: true,
-            help: 'Attempt to intelligently extract a useful property of the loaded JSON to run against.'
+            help: 'Attempt to intelligently extract a useful property of the loaded data to run against.'
         },
         file: {
             abbr: 'f',
             metavar: 'FILE',
-            help: 'Load JSON from the given file instead of reading from stdin.',
+            help: 'Load data from the given file instead of reading from stdin.',
             type: 'string'
         },
         configPath: {
@@ -867,7 +877,7 @@ function parseCommandLine(commands)
         }
     };
     
-    jsonOutputOpts = {
+    objectOutputOpts = {
         prettyPrint: {
             abbr: 'p',
             full: 'pretty-print',
@@ -953,9 +963,9 @@ function parseCommandLine(commands)
             
             shallowCopy(globalOpts, commandDesc.options);
             
-            if(commandDesc.outputsJSON) {
-                commandDesc.hasSmartOutput = true;  // outputsJSON implies hasSmartOutput
-                shallowCopy(jsonOutputOpts, commandDesc.options);
+            if(commandDesc.outputsObject) {
+                commandDesc.hasSmartOutput = true;  // outputsObject implies hasSmartOutput
+                shallowCopy(objectOutputOpts, commandDesc.options);
             }
 
             if(commandDesc.hasSmartOutput)
@@ -1029,7 +1039,8 @@ function loadConfig(defaultConfig, configPath)
         
         copyStringArraySetting(userConfig, config, 'moduleDirectories');
         copyFunctionSetting(userConfig, config, 'prettyPrinter', 2);
-        copyFunctionSetting(userConfig, config, 'jsonParser', 3);
+        copyFunctionSetting(userConfig, config, 'unprettyPrinter', 2);
+        copyFunctionSetting(userConfig, config, 'inputParser', 3);
         copyBooleanSetting(userConfig, config, 'alwaysSort');
         copyBooleanSetting(userConfig, config, 'alwaysPrettyPrint');
         copyBooleanSetting(userConfig, config, 'alwaysAutoUnwrap');
