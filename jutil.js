@@ -822,6 +822,8 @@ function outputString(str, runtimeSettings, config)
     var buffer,
         lineCount,
         pagerCmd,
+        pagerSplit,
+        pagerArgs = [],
         pager;
 
     if(runtimeSettings.smartOutput) {
@@ -829,9 +831,16 @@ function outputString(str, runtimeSettings, config)
         if(lineCount > process.stdout.getWindowSize()[1]) {
             // Autopage
             pagerCmd = process.env.PAGER || 'less';
+
+            // TODO: this is a pretty naive processing of arguments embedded in $PAGER
+            if(pagerCmd.indexOf(' ') != -1) {
+                pagerSplit = pagerCmd.split(' ');
+                pagerCmd = pagerSplit[0]
+                pagerArgs = pagerSplit.slice(1);
+            }
             
             pager = require('child_process')
-                .spawn(pagerCmd, [], {
+                .spawn(pagerCmd, pagerArgs, {
                     customFds: [-1, process.stdout.fd, -1]
                 });
             
