@@ -60,7 +60,7 @@ var defaultConfig = {
     
     // Always sort keys in the output. Useful for automated testing or
     // doing diffs against the results.
-    alwaysSort: false,
+    alwaysSortKeys: false,
     
     // For commands that take a script to execute, don't wrap that script
     // inside "with(this) { ... }", which is the default behavior. The clause
@@ -721,8 +721,8 @@ function makeRuntimeSettings(commandDesc, config, opts)
         else
             settings.outputFormatter = config.unprettyPrinter;
     
-        if(opts.sort === false) {} // --no-sort
-        else if(opts.sort || config.alwaysSort) settings.sort = true;
+        if(opts.sortKeys === false) {} // --no-sort-keys
+        else if(opts.sortKeys || config.alwaysSortKeys) settings.sortKeys = true;
     }
     
     if(commandDesc.hasWithClauseOpt) {
@@ -876,7 +876,7 @@ function outputObject(obj, runtimeSettings, config)
     if(obj === undefined)
         return;
 
-    if(runtimeSettings.sort)
+    if(runtimeSettings.sortKeys)
         obj = sortObject(obj);
 
     try {
@@ -958,7 +958,7 @@ function parseCommandLine(commands)
             flag: true,
             help: 'Pretty-print the output.'
         },
-        sort: {
+        sortKeys: {
             abbr: 's',
             full: 'sort-keys',
             flag: true,
@@ -990,7 +990,7 @@ function parseCommandLine(commands)
             metavar: 'FILE',
             list: true,
             type: 'string',
-            help: 'Load the given JavaScript file before executing.'
+            help: 'Load the given JavaScript file before executing. You may repeat this option.'
         }
     };
     
@@ -1134,7 +1134,7 @@ function loadConfig(defaultConfig, configPath)
         copyFunctionSetting(userConfig, config, 'prettyPrinter', 2);
         copyFunctionSetting(userConfig, config, 'unprettyPrinter', 2);
         copyFunctionSetting(userConfig, config, 'inputParser', 3);
-        copyBooleanSetting(userConfig, config, 'alwaysSort');
+        copyBooleanSetting(userConfig, config, 'alwaysSortKeys');
         copyBooleanSetting(userConfig, config, 'alwaysPrettyPrint');
         copyBooleanSetting(userConfig, config, 'alwaysAutoUnwrap');
         copyStringArraySetting(userConfig, config, 'autoUnwrapProperties');
