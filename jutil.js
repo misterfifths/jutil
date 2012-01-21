@@ -250,6 +250,7 @@ if(require.main == module) {
                 }
             },
             outputsJSON: false,
+            hasSmartOutput: true,  // format doesn't spit out JSON, but we do want its output to be subject to autopaging
             needsSandbox: true,
             hasWithClauseOpt: true,
             handler: formatCommandHandler
@@ -347,7 +348,7 @@ function countCommandHandler(runtimeSettings, config, opts)
         return true;
     });
     
-    process.stdout.write(res.toString() + '\n');
+    return res.toString() + '\n';
 }
 
 function mapOverInput(expr, runtimeSettings, handleOne)
@@ -569,7 +570,9 @@ function formatCommandHandler(runtimeSettings, config, opts)
         data = runtimeSettings.data,
         i,
         replacer,
-        newline = opts.noNewline ? '' : '\n';
+        preparedFormatString,
+        newline = opts.noNewline ? '' : '\n',
+        res = '';
     
     // TODO: might be nice to provide autopaging here, like for the commands
     // that output JSON.
@@ -578,26 +581,30 @@ function formatCommandHandler(runtimeSettings, config, opts)
         replacer = replacerFactory(data, '$data');
 
         if(opts.header)
-            process.stdout.write(prepareFormatString(opts.header).replace(re, replacer) + newline);
+            res += prepareFormatString(opts.header).replace(re, replacer) + newline;
     }
+
+    preparedFormatString = prepareFormatString(format);
 
     if(Array.isArray(data)) {
         for(i = 0; i < data.length; i++) {
             replacer = replacerFactory(data[i], '$data[' + i + ']');
-            process.stdout.write(prepareFormatString(format).replace(re, replacer) + newline);
+            res += preparedFormatString.replace(re, replacer) + newline;
         }
     }
     else {
         replacer = replacerFactory(data, '$data');
-        process.stdout.write(prepareFormatString(format).replace(re, replacer) + newline);
+        res += preparedFormatString.replace(re, replacer) + newline;
     }
 
     if(opts.footer) {
         replacer = replacerFactory(data, '$data');
 
         if(opts.footer)
-            process.stdout.write(prepareFormatString(opts.footer).replace(re, replacer) + newline);
+            res += prepareFormatString(opts.footer).replace(re, replacer) + newline;
     }
+
+    return res;
 }
 
 
@@ -611,6 +618,8 @@ function runCommand(commandDesc, opts)
 
     if(commandDesc.outputsJSON)
         outputJSON(res, runtimeSettings, config);
+    else
+        outputString(res, runtimeSettings, config);
 }
 
 // Merges config and command line options down into a friendly object, which
@@ -624,12 +633,14 @@ function makeRuntimeSettings(commandDesc, config, opts)
         settings = {},
         dirs;
     
-    if(commandDesc.outputsJSON) {
-        if(opts.disableSmartOutput) settings.smartOutput = false;
+    if(commandDesc.hasSmartOutput) {
+        if(opts.disableSmartOutput || !isatty) settings.smartOutput = false;
         else settings.smartOutput = opts.disableSmartOutput === false || !config.disableSmartOutput;
-        
+    }
+
+    if(commandDesc.outputsJSON) {
         if(opts.prettyPrint === false) {}  // --no-pretty-print
-        else if(opts.prettyPrint || config.alwaysPrettyPrint || (settings.smartOutput && isatty))
+        else if(opts.prettyPrint || config.alwaysPrettyPrint || settings.smartOutput)
             settings.prettyPrinter = config.prettyPrinter;
     
         if(opts.sort === false) {} // --no-sort
@@ -728,13 +739,53 @@ function loadModules(modulePaths, sandbox)
     }
 }
 
-function outputJSON(obj, runtimeSettings, config)
+function outputString(str, runtimeSettings, config)
 {
     var buffer,
         lineCount,
         pagerCmd,
         pager;
 
+    if(runtimeSettings.smartOutput) {
+        lineCount = str.length - str.replace(new RegExp('\n', 'g'), '').length;
+        if(lineCount > process.stdout.getWindowSize()[1]) {
+            // Autopage
+            pagerCmd = process.env.PAGER || 'less';
+            
+            pager = require('child_process')
+                .spawn(pagerCmd, [], {
+                    customFds: [-1, process.stdout.fd, -1]
+                });
+            
+            pager.stderr.setEncoding('utf8');
+            pager.stderr.on('data', function(data) {
+                console.error('Error running pager command ("' + pagerCmd + '"): ' + data);
+                process.exit(1);
+            });
+             
+            pager.stdin.end(str);
+            pager.stdin.on('error', function(exc) {
+                // Silence EPIPE; just means that they closed the pager before
+                // we finished writing (or the pager never started, in which
+                // case the stderr output will be sufficient).
+                if(exc.code != 'EPIPE')
+                    throw exc;
+            });
+            
+            return;
+        }
+    }
+    
+    // process.stdout.write seems like the obvious choice here, but
+    // it causes an exception if we pipe a big result to something
+    // and close the whole shebang before it can finish writing.
+    // Should probably file a node bug...
+    buffer = new Buffer(str);
+    require('fs').write(process.stdout.fd, buffer, 0, buffer.length);
+}
+
+function outputJSON(obj, runtimeSettings, config)
+{
     if(obj === undefined)
         return;
 
@@ -758,45 +809,8 @@ function outputJSON(obj, runtimeSettings, config)
         // so we're just ignoring this for now.
         return;
     }
-    
-    if(runtimeSettings.smartOutput &&
-       require('tty').isatty(process.stdout.fd))
-    {
-        lineCount = obj.length - obj.replace(new RegExp('\n', 'g'), '').length;
-        if(lineCount > process.stdout.getWindowSize()[1]) {
-            // Autopage
-            pagerCmd = process.env.PAGER || 'less';
-            
-            pager = require('child_process')
-                .spawn(pagerCmd, [], {
-                    customFds: [-1, process.stdout.fd, -1]
-                });
-            
-            pager.stderr.setEncoding('utf8');
-            pager.stderr.on('data', function(data) {
-                console.error('Error running pager command ("' + pagerCmd + '"): ' + data);
-                process.exit(1);
-            });
-             
-            pager.stdin.end(obj);
-            pager.stdin.on('error', function(exc) {
-                // Silence EPIPE; just means that they closed the pager before
-                // we finished writing (or the pager never started, in which
-                // case the stderr output will be sufficient).
-                if(exc.code != 'EPIPE')
-                    throw exc;
-            });
-            
-            return;
-        }
-    }
-    
-    // process.stdout.write seems like the obvious choice here, but
-    // it causes an exception if we pipe a big result to something
-    // and close the whole shebang before it can finish writing.
-    // Should probably file a node bug...
-    buffer = new Buffer(obj);
-    require('fs').write(process.stdout.fd, buffer, 0, buffer.length);
+
+    outputString(obj, runtimeSettings, config);
 }
 
 
@@ -811,6 +825,7 @@ function parseCommandLine(commands)
         parser = require('nomnom'),
         globalOpts,
         jsonOutputOpts,
+        smartOutputOpt,
         sandboxOpts,
         withClauseOpt,
         commandName,
@@ -864,7 +879,10 @@ function parseCommandLine(commands)
             full: 'sort-keys',
             flag: true,
             help: 'Sort keys in the output.'
-        },
+        }
+    };
+
+    smartOutputOpt = {
         disableSmartOutput: {
             abbr: 'S',
             full: 'disable-smart',
@@ -893,10 +911,12 @@ function parseCommandLine(commands)
     };
     
     withClauseOpt = {
-        abbr: 'W',
-        full: 'disable-with',
-        flag: true,
-        help: 'Don\'t wrap the script to execute in a "with" clause.'
+        disableWithClause: {
+            abbr: 'W',
+            full: 'disable-with',
+            flag: true,
+            help: 'Don\'t wrap the script to execute in a "with" clause.'
+        }
     };
     
     // If we weren't invoked as 'jutil', we were called 'j<command name>',
@@ -933,14 +953,19 @@ function parseCommandLine(commands)
             
             shallowCopy(globalOpts, commandDesc.options);
             
-            if(commandDesc.outputsJSON)
+            if(commandDesc.outputsJSON) {
+                commandDesc.hasSmartOutput = true;  // outputsJSON implies hasSmartOutput
                 shallowCopy(jsonOutputOpts, commandDesc.options);
+            }
+
+            if(commandDesc.hasSmartOutput)
+                shallowCopy(smartOutputOpt, commandDesc.options);
             
             if(commandDesc.needsSandbox)
                 shallowCopy(sandboxOpts, commandDesc.options);
             
             if(commandDesc.hasWithClauseOpt)
-                commandDesc.options.disableWithClause = withClauseOpt;
+                shallowCopy(withClauseOpt, commandDesc.options);
             
             commandObj.options(commandDesc.options);
             
