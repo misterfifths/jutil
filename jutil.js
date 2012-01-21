@@ -1026,6 +1026,9 @@ function parseCommandLine(commands)
         
         process.exit(code);
     });
+
+    if(require('tty').isatty(process.stdout.fd))
+        parser.colors();
     
     parser
         .nocommand()
