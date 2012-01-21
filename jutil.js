@@ -1010,6 +1010,22 @@ function parseCommandLine(commands)
     }
     
     parser.script('jutil');
+    parser.printer(function(str, code) {
+        // Wrap the output at terminal width or 80 characters (if not a terminal)
+        var isatty = require('tty').isatty(process.stdout.fd),
+            width = isatty ? process.stdout.getWindowSize()[0] : 80,
+            wrap = require('wordwrap')(width);
+
+        str = wrap(str) + '\n';
+        code == code || 0;
+
+        if(code == 0)
+            process.stdout.write(str);
+        else
+            process.stderr.write(str);
+        
+        process.exit(code);
+    });
     
     parser
         .nocommand()

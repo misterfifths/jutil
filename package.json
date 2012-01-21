@@ -21,7 +21,8 @@
         "jsort": "./jutil.js"
     },
     "dependencies": {
-        "nomnom": "1.5.x"
+        "nomnom": "1.5.x",
+        "wordwrap": ">=0.0.2"
     },
     "devDependencies": {
         "jshint": ">=0.5.5"
