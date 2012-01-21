@@ -37,7 +37,7 @@ Each of these commands can be run in two ways: `jutil <command>` or via an alias
 
 jutil
 -----
-The default behavior, as discussed above, runs a script you provide (which is optional) and prints its result. The script is evaluated in an enviroment where `this` refers to the loaded data (after any unwrapping -- see the "Unwrapping" section below). It is also, by default, wrapped inside `with(this) { ... }`, so that properties from the data can be referenced without qualification. This may be troublesome if the data has property names that hide helpful globals. The `--disable-with` or `-W` command-line options disable this feature.
+The default behavior, as discussed above, runs a script you provide (which is optional) and prints its result. The script is evaluated in an enviroment where `this` refers to the loaded data (after any [unwrapping](#unwrapping)). It is also, by default, wrapped inside `with(this) { ... }`, so that properties from the data can be referenced without qualification. This may be troublesome if the data has property names that hide helpful globals. The `--disable-with` or `-W` command-line options disable this feature.
 
 You may have noticed the returned JSON in the second sample above is formatted. By default, if jutil's stdout is a terminal, the output will be pretty-printed and sent to your pager if it is larger than your screen. To disable this feature, use the `--disable-smart` or `-S` options.
 
@@ -221,7 +221,7 @@ The pipe is your friend.
 Advanced Usage
 ==============
 
-Config files
+Config files <a name="configFiles" />
 ------------
 You can set up a variety of default options and tweak the behavior of jutil with a configuration file, which lives at `~/.jutil/config` by default. To specify another configuration file to load, use the `-c` option to any tool.
 
@@ -233,7 +233,7 @@ var config = { alwaysSortKeys: true };
 
 You can find a complete list of the options available in a configuration file (and their default values) at the top of [the main source file](https://github.com/misterfifths/jutil/blob/master/jutil.js#L5).
 
-Unwrapping
+Unwrapping <a name="unwrapping" />
 ----------
 Many JSON APIs wrap their real payload in an object with metadata -- pagination information or rate limits, for example. And metadata aside, most such APIs wrap arrays in dummy objects to sidestep [this nasty issue](http://haacked.com/archive/2008/11/20/anatomy-of-a-subtle-json-vulnerability.aspx). But more often than not, all you care about as far as manipulation is concerned is the actual payload.
 
@@ -263,7 +263,47 @@ sum: 5
 sum: 10
 ````
 
-In a config file, you can turn unwrapping on by default, override the behavior of the auto-unwrapper, and specify a default list of unwrapping properties. With a small amount of customization, you should never have to worry about wrapped payloads.
+In a [config file](#configFiles), you can turn unwrapping on by default, override the behavior of the auto-unwrapper, and specify a default list of unwrapping properties. With a small amount of customization, you should never have to worry about wrapped payloads.
 
 Modules
 -------
+To make scriptwriting easier, you may wish to define a set of frequently-used functions or include utility libraries in the environment where jutil evaluates its input. You can do this with *modules*. You can include modules in two ways: by pointing jutil at a directory (in which case all .js files in that directory will be loaded -- the `-M` or `--module-dir` option), or at individual files with `-m` or `--module`. By default, the directory `~/.jutil/modules` will be searched if it exists. You can specify default directories in a [config file](#configFiles).
+
+As a plausible example, say you wanted the great [underscore.js](http://documentcloud.github.com/underscore/) available to you in all jutil calls. Simple download it and place it in the `~/.jutil/modules` directory, and the `_` object will exist:
+
+````sh
+echo "[3, 4, 1]" | jutil 'return _.shuffle(this)'
+[
+    4,
+    3,
+    1
+]
+````
+
+You could use the module facility to provide a custom suite of helper functions. For example, say you frequently need to compute MD5 sums. This simple module file provides a function to jutil, `$md5`, that does so:
+
+````javascript
+function $md5(str) {
+    var hasher = require('crypto').createHash('md5');
+	hasher.update(str, 'utf8');
+	return hasher.digest('base64');
+}
+````
+
+Note the use of `require()`; module code runs inside a node environment -- the sky's the limit.
+
+With that file in a module directory, we can do this:
+
+````sh
+echo '[ { "name": "Sam" }, { "name": "Lou" } ]' | jselect '{ name: name, hash: $md5(name) }'
+[
+    {
+        "hash": "ug4M3hv3LCjUNciaZq/GGg==",
+        "name": "Sam"
+    },
+    {
+        "hash": "qAli+cWlWug7DnMZsv2Wrw==",
+        "name": "Lou"
+    }
+]
+````
