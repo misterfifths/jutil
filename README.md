@@ -181,3 +181,38 @@ PrettyMotherfucka♥: 45716 tweets, follower/friend ratio: 1.33
 L O A D I N G....OH!: 15045 tweets, follower/friend ratio: 1.18
 ...
 ````
+
+Putting it all together
+-----------------------
+Since most of these tools output JSON, you can chain them together like crazy. And `jformat` opens the door to programs that don't understand JSON. [One thing well](http://en.wikipedia.org/wiki/Unix_philosophy), baby!
+
+So, who's the most active recent tweeter?
+
+````sh
+$ curl -s https://api.twitter.com/1/statuses/public_timeline.json |
+  jsort -r user.statuses_count |
+  jfirst |
+  jformat 'Of the most recent tweeters, user %{user.name} has the most updates: %{user.statuses_count}'
+Of the most recent tweeters, user jorge has the most updates: 36870
+````
+
+And what's the language breakdown in the most recent [Gists](https://gist.github.com/)?
+
+````sh
+$ curl -s https://api.github.com/gists |
+  jselect 'files[Object.keys(files)[0]]' |
+  jwhere language |
+  jformat %language |
+  sort | uniq -c | sort -nr
+  10 Text
+   3 XML
+   3 Ruby
+   3 JavaScript
+   2 HTML+ERB
+   2 Groovy
+   2 C#
+   1 Shell
+   1 PHP
+````
+
+The pipe is your friend.
