@@ -835,7 +835,7 @@ function outputString(str, runtimeSettings, config)
             // TODO: this is a pretty naive processing of arguments embedded in $PAGER
             if(pagerCmd.indexOf(' ') != -1) {
                 pagerSplit = pagerCmd.split(' ');
-                pagerCmd = pagerSplit[0]
+                pagerCmd = pagerSplit[0];
                 pagerArgs = pagerSplit.slice(1);
             }
             
