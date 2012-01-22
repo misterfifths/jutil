@@ -37,7 +37,7 @@ Each of these commands can be run in two ways: `jutil <command>` or via an alias
 
 jutil
 -----
-The default behavior, as discussed above, runs a script you provide (which is optional) and prints its result. The script is evaluated in an enviroment where `this` refers to the loaded data (after any unwrapping). It is also, by default, wrapped inside `with(this) { ... }`, so that properties from the data can be referenced without qualification. This may be troublesome if the data has property names that hide helpful globals. The `--disable-with` or `-W` command-line options disable this feature.
+The default behavior, as discussed above, runs a script you provide (which is optional) and prints its result. The script is evaluated in an enviroment where `this` refers to the loaded data (after any [unwrapping](#unwrapping)). It is also, by default, wrapped inside `with(this) { ... }`, so that properties from the data can be referenced without qualification. This may be troublesome if the data has property names that hide helpful globals. The `--disable-with` or `-W` command-line options disable this feature.
 
 You may have noticed the returned JSON in the second sample above is formatted. By default, if jutil's stdout is a terminal, the output will be pretty-printed and sent to your pager if it is larger than your screen. To disable this feature, use the `--disable-smart` or `-S` options.
 
@@ -111,6 +111,40 @@ $ echo '[ {"x": 1, "y": 2}, {"x": 2, "y": 3} ]' | jselect '{x: x, y: y, sum: x +
 ]
 ````
 
+jsort
+-----
+As the name implies, this one sorts the objects in the input data via a given sort key. If the input is not an array, it is returned unaltered. Here's a trivial example:
+
+````sh
+$ echo '[ {"x": 10, "y": 2}, {"x": 2, "y": 3} ]' | jsort 'x + y'
+[
+    {
+        "x": 2,
+        "y": 3
+    },
+    {
+        "x": 10,
+        "y": 2
+    }
+]
+````
+
+By default, objects are sorted by your key expression in ascending order. Pass `-r` for descending. If your sort key is a string, it is compared in a case-sensitive manner by default--`-i` makes it case-insensitive.
+
+There is nothing stopping you from returning a more complicated object as your sort key; in fact, if you omit a sort key expression, the objects in the input will be used wholesale as the sort keys. However, since sort keys are compared using native operators, the result with sort keys that are objects will be meaningless.
+
+The behavior with no sort key expression can be useful, however, if your data is an array of straight strings or numbers:
+
+````sh
+$ echo '[5, 2, 6, 10]' | jsort -r
+[
+    10,
+    6,
+    5,
+    2
+]
+````
+
 jprops
 ------
 This tool is intended to streamline the most common use for `jselect`, selecting only a subset of properties from objects in the data. `jprops` takes a list of property mappings, of the form `[to=]from`, where `to` is the property in the result and `from` is the property in the input. If `to` is ommitted, it defaults to `from`. Note that either of these mapping components can have dots in them, to specify an object traversal.
@@ -146,4 +180,132 @@ $ curl -s https://api.twitter.com/1/statuses/public_timeline.json |
 PrettyMotherfucka♥: 45716 tweets, follower/friend ratio: 1.33
 L O A D I N G....OH!: 15045 tweets, follower/friend ratio: 1.18
 ...
+````
+
+Putting it all together
+-----------------------
+Since most of these tools output JSON, you can chain them together like crazy. And `jformat` opens the door to programs that don't understand JSON. [One thing well](http://en.wikipedia.org/wiki/Unix_philosophy), baby!
+
+So, who's the most active recent tweeter?
+
+````sh
+$ curl -s https://api.twitter.com/1/statuses/public_timeline.json |
+  jsort -r user.statuses_count |
+  jfirst |
+  jformat 'Of the most recent tweeters, user %{user.name} has the most updates: %{user.statuses_count}'
+Of the most recent tweeters, user jorge has the most updates: 36870
+````
+
+And what's the language breakdown in the most recent [Gists](https://gist.github.com/)?
+
+````sh
+$ curl -s https://api.github.com/gists |
+  jselect 'files[Object.keys(files)[0]]' |
+  jwhere language |
+  jformat %language |
+  sort | uniq -c | sort -nr
+  10 Text
+   3 XML
+   3 Ruby
+   3 JavaScript
+   2 HTML+ERB
+   2 Groovy
+   2 C#
+   1 Shell
+   1 PHP
+````
+
+The pipe is your friend.
+
+
+Advanced Usage
+==============
+
+<a name="configFiles" />
+Config files
+------------
+You can set up a variety of default options and tweak the behavior of jutil with a configuration file, which lives at `~/.jutil/config` by default. To specify another configuration file to load, use the `-c` option to any tool.
+
+The config file is a JavaScript file (not strictly JSON; it is essentially `eval`'d) that must at some point assign to a global object called `config`. For example, a config file that turns on key sorting in JSON output by default would look like this:
+
+````javascript
+var config = { alwaysSortKeys: true };
+````
+
+You can find a complete list of the options available in a configuration file (and their default values) at the top of [the main source file](https://github.com/misterfifths/jutil/blob/master/jutil.js#L5).
+
+<a name="unwrapping" />
+Unwrapping
+----------
+Many JSON APIs wrap their real payload in an object with metadata -- pagination information or rate limits, for example. And metadata aside, most such APIs wrap arrays in dummy objects to sidestep [this nasty issue](http://haacked.com/archive/2008/11/20/anatomy-of-a-subtle-json-vulnerability.aspx). But more often than not, all you care about as far as manipulation is concerned is the actual payload.
+
+The naive way to handle this is to pass the raw input through `jutil` first, returning only the payload. For example:
+
+````sh
+$ echo '{ "payload": [ { "x": 2, "y": 3 }, { "x": 4, "y": 6 } ] }' |
+  jutil 'return this.payload' |
+  jformat 'sum: %{x + y}'
+sum: 5
+sum: 10
+````
+
+This works fine, but is a lot of typing. The jutil suite offers two ways to automatically unwrap a payload. The first is to manually specify the property name that contains the payload, using the `-u` or `--unwrap-prop` argument to any tool. We can then turn our last example into the following:
+
+````sh
+$ echo '{ "payload": [ { "x": 2, "y": 3 }, { "x": 4, "y": 6 } ] }' | jformat -u payload 'sum: %{x + y}'
+sum: 5
+sum: 10
+````
+
+Ah, that feels better. There is also *auto-unwrapping* (`-a` or `--auto-unwrap`), which attempts to be smart about what might be a payload. The default algorithm (which you can override in a config file) is rather naive. If the input is an object that only has one property, and the value of that property is an object or an array, it returns that value. That is exactly the case we have in our example above, so we could in fact further simplify it:
+
+````sh
+$ echo '{ "payload": [ { "x": 2, "y": 3 }, { "x": 4, "y": 6 } ] }' | jformat -a 'sum: %{x + y}'
+sum: 5
+sum: 10
+````
+
+In a [config file](#configFiles), you can turn unwrapping on by default, override the behavior of the auto-unwrapper, and specify a default list of unwrapping properties. With a small amount of customization, you should never have to worry about wrapped payloads.
+
+Modules
+-------
+To make scriptwriting easier, you may wish to define a set of frequently-used functions or include utility libraries in the environment where jutil evaluates its input. You can do this with *modules*. You can include modules in two ways: by pointing jutil at a directory (in which case all .js files in that directory will be loaded -- the `-M` or `--module-dir` option), or at individual files with `-m` or `--module`. By default, the directory `~/.jutil/modules` will be searched if it exists. You can specify default directories in a [config file](#configFiles).
+
+As a plausible example, say you wanted the great [underscore.js](http://documentcloud.github.com/underscore/) available to you in all jutil calls. Simple download it and place it in the `~/.jutil/modules` directory, and the `_` object will exist:
+
+````sh
+echo "[3, 4, 1]" | jutil 'return _.shuffle(this)'
+[
+    4,
+    3,
+    1
+]
+````
+
+You could use the module facility to provide a custom suite of helper functions. For example, say you frequently need to compute MD5 sums. This simple module file provides a function to jutil, `$md5`, that does so:
+
+````javascript
+function $md5(str) {
+    var hasher = require('crypto').createHash('md5');
+	hasher.update(str, 'utf8');
+	return hasher.digest('base64');
+}
+````
+
+Note the use of `require()`; module code runs inside a node environment -- the sky's the limit.
+
+With that file in a module directory, we can do this:
+
+````sh
+echo '[ { "name": "Sam" }, { "name": "Lou" } ]' | jselect '{ name: name, hash: $md5(name) }'
+[
+    {
+        "hash": "ug4M3hv3LCjUNciaZq/GGg==",
+        "name": "Sam"
+    },
+    {
+        "hash": "qAli+cWlWug7DnMZsv2Wrw==",
+        "name": "Lou"
+    }
+]
 ````
