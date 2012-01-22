@@ -400,8 +400,7 @@ function mapOverInput(expr, runtimeSettings, handleOne)
         // Function.apply() with one of those turns 'this' into the global
         // object, which is not what was intended, certainly.
         // Ewwww... also doing function.apply(<primitive>) will cause the
-        // primitive to be autoboxed, which does some Really Bad Things
-        // to strings and numbers. See echo '["abc"]' | jselect this
+        // primitive to be autoboxed, which may do Bad Things.
         var script = '(function() { ';
         if(runtimeSettings.withClause) script += 'with(this) { ';
         script += 'return (' + expr + ');';
@@ -1287,7 +1286,17 @@ function sortObject(obj)
     // does that, at least for now...
     
     var sortedKeys, sortedObj, i, key;
-    
+
+    // Don't be fooled by boxed primitives
+    // For some reason, instanceof was lying here, and direct comparison of
+    // constructors to functions was failing too. Have a feeling it has to
+    // do with the fact that these objects crossed the sandbox boundary...
+    // Oof.
+    if(obj.constructor.name == 'String' ||
+       obj.constructor.name == 'Number' ||
+       obj.constructor.name == 'Boolean')
+        return obj.valueOf();
+
     if(typeof obj != 'object' || obj === null)
         return obj;
     
