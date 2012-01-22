@@ -17,7 +17,7 @@ $ curl -s http://graph.facebook.com/4 | jutil 'return name'
 Or, if your script returns an object, it is formatted as JSON:
 
 ```sh
-$ curl -s https://api.twitter.com/1/statuses/public_timeline.json | jutil 'return this[0].user'
+$ curl -s https://api.twitter.com/1/statuses/public_timeline.json | jutil 'return $[0].user'
 {
     "contributors_enabled": false,
     "created_at": "Thu Sep 22 18:56:51 +0000 2011",
@@ -37,7 +37,7 @@ Each of these commands can be run in two ways: `jutil <command>` or via an alias
 
 jutil
 -----
-The default behavior, as discussed above, runs a script you provide (which is optional) and prints its result. The script is evaluated in an enviroment where `this` refers to the loaded data (after any [unwrapping](#unwrapping)). It is also, by default, wrapped inside `with(this) { ... }`, so that properties from the data can be referenced without qualification. This may be troublesome if the data has property names that hide helpful globals. The `--disable-with` or `-W` command-line options disable this feature.
+The default behavior, as discussed above, runs a script you provide (which is optional) and prints its result. The script is evaluated in an enviroment where `$` refers to the loaded data (after any [unwrapping](#unwrapping)). It is also, by default, wrapped inside `with($) { ... }`, so that properties from the data can be referenced without qualification. This may be troublesome if the data has property names that hide helpful globals. The `--disable-with` or `-W` command-line options disable this feature.
 
 You may have noticed the returned JSON in the second sample above is formatted. By default, if jutil's stdout is a terminal, the output will be pretty-printed and sent to your pager if it is larger than your screen. To disable this feature, use the `--disable-smart` or `-S` options.
 
@@ -45,7 +45,7 @@ jwhere
 ------
 This tool iterates over the elements in the input and returns any objects that match the predicate you provide. If the input is not an array, it is converted to a one-element array. If no objects in the input match, the empty array `[]` is returned.
 
-The predicate runs in a similar context to that of scripts for `jutil`, except that it must be an expression and not a full program. The result of the predicate expression will be converted to a boolean, so JavaScript's notorious rules about "falsiness" are in play. Let's look at some examples:
+The predicate runs in a similar context to that of scripts for `jutil`, except that it must be an expression and not a full program. Each time your expression is evaluated, the `$` variable refers to the current element in the data (and you are, as above, optionally within `with($) { ... }`). The result of the predicate expression will be converted to a boolean, so JavaScript's notorious rules about "falsiness" are in play. Let's look at some examples:
 
 ````sh
 $ echo '[ {"x": 1, "y": 2}, {"x": 2, "y": 3}, {"x": 3, "y": 6} ]' | jwhere 'x + y > 4'
@@ -77,6 +77,16 @@ $ curl -s https://api.twitter.com/1/statuses/public_timeline.json | jwhere 'text
         ...
     },
     ...
+]
+````
+
+Or just remove falsy values from an input:
+
+````sh
+$ echo '[0, false, 4, "", "Bob"]' | jwhere $
+[
+    4,
+    "Bob"
 ]
 ````
 
@@ -129,9 +139,9 @@ $ echo '[ {"x": 10, "y": 2}, {"x": 2, "y": 3} ]' | jsort 'x + y'
 ]
 ````
 
-By default, objects are sorted by your key expression in ascending order. Pass `-r` for descending. If your sort key is a string, it is compared in a case-sensitive manner by default--`-i` makes it case-insensitive.
+By default, objects are sorted by your key expression in ascending order. Pass `-r` for descending. If your sort key is a string, it is compared in a case-sensitive manner by default — `-i` makes it case-insensitive.
 
-There is nothing stopping you from returning a more complicated object as your sort key; in fact, if you omit a sort key expression, the objects in the input will be used wholesale as the sort keys. However, since sort keys are compared using native operators, the result with sort keys that are objects will be meaningless.
+There is nothing stopping you from returning a more complicated object as your sort key; in fact, if you omit a sort key expression, the objects in the input will be used wholesale as the sort keys. However, since sort keys are compared using native operators, the result with sort keys that are objects will likely be meaningless.
 
 The behavior with no sort key expression can be useful, however, if your data is an array of straight strings or numbers:
 
@@ -170,7 +180,7 @@ Things get a little funky if you try to traverse into an array with one of your 
 
 jformat
 -------
-This one is kind of like `jselect`, but instead of returning an object for each element in the data, it assembles a string. Tokens in the format string are of one of two forms: `%propertyName` or `%{expression}`. Note that the first syntax works only for simple property names -- it does not understand dot syntax.
+This one is kind of like `jselect`, but instead of returning an object for each element in the data, it assembles a string. Tokens in the format string are of one of two forms: `%propertyName` or `%{expression}`. Note that the first syntax works only for simple property names — it does not understand dot syntax.
 
 Here, have an example:
 
@@ -237,19 +247,19 @@ You can find a complete list of the options available in a configuration file (a
 <a name="unwrapping" />
 Unwrapping
 ----------
-Many JSON APIs wrap their real payload in an object with metadata -- pagination information or rate limits, for example. And metadata aside, most such APIs wrap arrays in dummy objects to sidestep [this nasty issue](http://haacked.com/archive/2008/11/20/anatomy-of-a-subtle-json-vulnerability.aspx). But more often than not, all you care about as far as manipulation is concerned is the actual payload.
+Many JSON APIs wrap their real payload in an object with metadata — pagination information or rate limits, for example. And metadata aside, most such APIs wrap arrays in dummy objects to sidestep [this nasty issue](http://haacked.com/archive/2008/11/20/anatomy-of-a-subtle-json-vulnerability.aspx). But more often than not, all you care about as far as manipulation is concerned is the actual payload.
 
 The naive way to handle this is to pass the raw input through `jutil` first, returning only the payload. For example:
 
 ````sh
 $ echo '{ "payload": [ { "x": 2, "y": 3 }, { "x": 4, "y": 6 } ] }' |
-  jutil 'return this.payload' |
+  jutil 'return payload' |
   jformat 'sum: %{x + y}'
 sum: 5
 sum: 10
 ````
 
-This works fine, but is a lot of typing. The jutil suite offers two ways to automatically unwrap a payload. The first is to manually specify the property name that contains the payload, using the `-u` or `--unwrap-prop` argument to any tool. We can then turn our last example into the following:
+This works fine, but is a lot of typing. The jutil suite offers two ways to unwrap a payload inline. The first is to manually specify the property name that contains the payload, using the `-u` or `--unwrap-prop` argument to any tool. We can then turn our last example into the following:
 
 ````sh
 $ echo '{ "payload": [ { "x": 2, "y": 3 }, { "x": 4, "y": 6 } ] }' | jformat -u payload 'sum: %{x + y}'
@@ -269,12 +279,12 @@ In a [config file](#configFiles), you can turn unwrapping on by default, overrid
 
 Modules
 -------
-To make scriptwriting easier, you may wish to define a set of frequently-used functions or include utility libraries in the environment where jutil evaluates its input. You can do this with *modules*. You can include modules in two ways: by pointing jutil at a directory (in which case all .js files in that directory will be loaded -- the `-M` or `--module-dir` option), or at individual files with `-m` or `--module`. By default, the directory `~/.jutil/modules` will be searched if it exists. You can specify default directories in a [config file](#configFiles).
+To make scriptwriting easier, you may wish to define a set of frequently-used functions or include utility libraries in the environment where jutil evaluates its input. You can do this with *modules*. You can include modules in two ways: by pointing jutil at a directory (in which case all .js files in that directory will be loaded — the `-M` or `--module-dir` option), or at individual files with `-m` or `--module`. By default, the directory `~/.jutil/modules` will be searched if it exists. You can specify default directories in a [config file](#configFiles).
 
 As a plausible example, say you wanted the great [underscore.js](http://documentcloud.github.com/underscore/) available to you in all jutil calls. Simple download it and place it in the `~/.jutil/modules` directory, and the `_` object will exist:
 
 ````sh
-echo "[3, 4, 1]" | jutil 'return _.shuffle(this)'
+$ echo "[3, 4, 1]" | jutil 'return _.shuffle($)'
 [
     4,
     3,
@@ -287,12 +297,12 @@ You could use the module facility to provide a custom suite of helper functions.
 ````javascript
 function $md5(str) {
     var hasher = require('crypto').createHash('md5');
-	hasher.update(str, 'utf8');
-	return hasher.digest('base64');
+    hasher.update(str, 'utf8');
+    return hasher.digest('base64');
 }
 ````
 
-Note the use of `require()`; module code runs inside a node environment -- the sky's the limit.
+Note the use of `require()`; module code runs inside a node environment — the sky's the limit.
 
 With that file in a module directory, we can do this:
 
