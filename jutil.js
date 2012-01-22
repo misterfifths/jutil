@@ -399,6 +399,9 @@ function mapOverInput(expr, runtimeSettings, handleOne)
         // TODO: if the array contains undefined or null, this gets funky.
         // Function.apply() with one of those turns 'this' into the global
         // object, which is not what was intended, certainly.
+        // Ewwww... also doing function.apply(<primitive>) will cause the
+        // primitive to be autoboxed, which does some Really Bad Things
+        // to strings and numbers. See echo '["abc"]' | jselect this
         var script = '(function() { ';
         if(runtimeSettings.withClause) script += 'with(this) { ';
         script += 'return (' + expr + ');';
