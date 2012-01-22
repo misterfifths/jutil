@@ -63,9 +63,9 @@ var defaultConfig = {
     alwaysSortKeys: false,
     
     // For commands that take a script to execute, don't wrap that script
-    // inside "with(this) { ... }", which is the default behavior. The clause
+    // inside "with($) { ... }", which is the default behavior. The clause
     // makes for less typing (you can reference properties of the input data
-    // without "this." before them), but can cause issues if the data has a
+    // without "$." before them), but can cause issues if the data has a
     // property with a name that hides some useful variable or function.
     disableWithClause: false,
     
@@ -328,11 +328,11 @@ function scriptCommandHandler(runtimeSettings, config, opts)
     }
     
     if(rawScript) {
-        script = '(function() { ';
-        if(runtimeSettings.withClause) script += 'with(this) { ';
+        script = '(function($) { ';
+        if(runtimeSettings.withClause) script += 'with(($ === null || $ === undefined) ? {} : $) { ';
         script += rawScript + ';';
         if(runtimeSettings.withClause) script += ' }';
-        script += ' }).apply($data);';
+        script += ' }).call($data, $data);';
         
         try {
             return vm.runInContext(script, runtimeSettings.sandbox, runtimeSettings.scriptPath);
@@ -396,16 +396,17 @@ function mapOverInput(expr, runtimeSettings, handleOne)
 {
     function applyToValue(valueStr)
     {
-        // TODO: if the array contains undefined or null, this gets funky.
+        // If the array contains undefined or null, this gets funky.
         // Function.apply() with one of those turns 'this' into the global
-        // object, which is not what was intended, certainly.
+        // object, which is not what was intended, certainly. That's
+        // why we recommend using $ to access the data, rather than 'this'.
         // Ewwww... also doing function.apply(<primitive>) will cause the
         // primitive to be autoboxed, which may do Bad Things.
-        var script = '(function() { ';
-        if(runtimeSettings.withClause) script += 'with(this) { ';
+        var script = '(function($) { ';
+        if(runtimeSettings.withClause) script += 'with(($ === null || $ === undefined) ? {} : $) { ';
         script += 'return (' + expr + ');';
         if(runtimeSettings.withClause) script += ' }';
-        script += ' }).apply(' + valueStr + ');';
+        script += ' }).call(' + valueStr + ', ' + valueStr + ');';
         
         return vm.runInContext(script, runtimeSettings.sandbox);
     }
@@ -430,11 +431,11 @@ function mapOverInput(expr, runtimeSettings, handleOne)
 
 function runPredicate(runtimeSettings, opts, handleMatch)
 {
-    // If the data contained a literal 'false' or number, it will get boxed
-    // into an object in applyToValue(), and !!(<boxed false>) is true,
-    // which is totally obnoxious. So we check for that by making sure
-    // the predicate isn't false in disguise with the valueOf().
-    var expr = '!!((' + opts.predicate + ').valueOf())';
+    // This means of detecting falsiness breaks down for boxed booleans:
+    // for instance, !!(new Boolean(false)) is true, which is totally obnoxious.
+    // This shouldn't be a problem if people don't use 'this' to refer to the
+    // current datum, this sidestepping boxing.
+    var expr = '!!(' + opts.predicate + ')';
     
     mapOverInput(expr, runtimeSettings, function(raw, matched) {
         if(matched)
@@ -585,11 +586,11 @@ function formatCommandHandler(runtimeSettings, config, opts)
             // TODO: slight modifications on this are used in a few places;
             // would be good to make this a function.
             var res,
-                script = '(function() { ';
-            if(runtimeSettings.withClause) script += 'with(this) { ';
+                script = '(function($) { ';
+            if(runtimeSettings.withClause) script += 'with(($ === null || $ === undefined) ? {} : $) { ';
             script += 'return (' + bracketed + ');';
             if(runtimeSettings.withClause) script += ' }';
-            script += ' }).apply(' + dataString + ');';
+            script += ' }).call(' + dataString + ', ' + dataString + ');';
 
             res = vm.runInContext(script, runtimeSettings.sandbox);
             if(res === null) return 'null';
@@ -660,7 +661,7 @@ function sortCommandHandler(runtimeSettings, config, opts)
         data = runtimeSettings.data,
         keyedData = [],
         i,
-        expr = opts.sortKeyExpr || 'this';  // default sort key is the whole object
+        expr = opts.sortKeyExpr || '$';  // default sort key is the whole object
     
     if(!Array.isArray(data))
         return data;
