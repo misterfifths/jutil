@@ -430,7 +430,11 @@ function mapOverInput(expr, runtimeSettings, handleOne)
 
 function runPredicate(runtimeSettings, opts, handleMatch)
 {
-    var expr = '!!(' + opts.predicate + ')';
+    // If the data contained a literal 'false' or number, it will get boxed
+    // into an object in applyToValue(), and !!(<boxed false>) is true,
+    // which is totally obnoxious. So we check for that by making sure
+    // the predicate isn't false in disguise with the valueOf().
+    var expr = '!!((' + opts.predicate + ').valueOf())';
     
     mapOverInput(expr, runtimeSettings, function(raw, matched) {
         if(matched)
@@ -1287,6 +1291,9 @@ function sortObject(obj)
     
     var sortedKeys, sortedObj, i, key;
 
+    if(obj === null || obj === undefined)
+        return obj;
+
     // Don't be fooled by boxed primitives
     // For some reason, instanceof was lying here, and direct comparison of
     // constructors to functions was failing too. Have a feeling it has to
@@ -1297,7 +1304,7 @@ function sortObject(obj)
        obj.constructor.name == 'Boolean')
         return obj.valueOf();
 
-    if(typeof obj != 'object' || obj === null)
+    if(typeof obj != 'object')
         return obj;
     
     if(Array.isArray(obj))
