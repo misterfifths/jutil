@@ -35,12 +35,14 @@ Commands
 
 Each of these commands can be run in two ways: `jutil <command>` or via an alias, `j<command>`. Aliases are installed for each command by the npm package, and we will refer to them via those aliases below. You can see detailed help on the options for each command by running them with the `--help` or `-h` command-line argument.
 
+<a name="jutil" />
 jutil
 -----
-The default behavior, as discussed above, runs a script you provide (which is optional) and prints its result. The script is evaluated in an enviroment where `$` refers to the loaded data (after any [unwrapping](#unwrapping)). It is also, by default, wrapped inside `with($) { ... }`, so that properties from the data can be referenced without qualification. This may be troublesome if the data has property names that hide helpful globals. The `--disable-with` or `-W` command-line options disable this feature.
+The default behavior, as discussed above, runs a script you provide (which is optional) and prints its result. The script is evaluated in an enviroment where `$` refers to the loaded data (after any [unwrapping](#unwrapping)). It is also, by default, wrapped inside `with($) { ... }`, so that properties from the data can be referenced without qualification. This may be troublesome if the data has property names that hide [helpful globals](#scriptContext). The `--disable-with` or `-W` command-line options disable this feature. For more details on the context in which your script executes, see [this section](#scriptContext).
 
 You may have noticed the returned JSON in the second sample above is formatted. By default, if jutil's stdout is a terminal, the output will be pretty-printed and sent to your pager if it is larger than your screen. To disable this feature, use the `--disable-smart` or `-S` options.
 
+<a name="jwhere" />
 jwhere
 ------
 This tool iterates over the elements in the input and returns any objects that match the predicate you provide. If the input is not an array, it is converted to a one-element array. If no objects in the input match, the empty array `[]` is returned.
@@ -277,6 +279,7 @@ sum: 10
 
 In a [config file](#configFiles), you can turn unwrapping on by default, override the behavior of the auto-unwrapper, and specify a default list of unwrapping properties. With a small amount of customization, you should never have to worry about wrapped payloads.
 
+<a name="modules" />
 Modules
 -------
 To make scriptwriting easier, you may wish to define a set of frequently-used functions or include utility libraries in the environment where jutil evaluates its input. You can do this with *modules*. You can include modules in two ways: by pointing jutil at a directory (in which case all .js files in that directory will be loaded — the `-M` or `--module-dir` option), or at individual files with `-m` or `--module`. By default, the directory `~/.jutil/modules` will be searched if it exists. You can specify default directories in a [config file](#configFiles).
@@ -319,3 +322,29 @@ echo '[ { "name": "Sam" }, { "name": "Lou" } ]' | jselect '{ name: name, hash: $
     }
 ]
 ````
+
+<a name="scriptContext" />
+More on the context in which your scripts execute
+-------------------------------------------------
+
+Commands that accept scripts on the command line run those scripts inside a [V8 sandbox](http://nodejs.org/docs/latest/api/vm.html#vm.createContext). This is the same sandbox where [modules](#modules) are loaded, hence the ability for modules to make functionality available to your scripts.
+
+The sandbox is populated with the following globals (in addition to the standard JavaScript ones):
+
+* `$config`: the contents of the user's [config file](#configFiles), or the default configuration if no config file was loaded
+* `$$`: all of the loaded data, after any [unwrapping](#unwrapping)
+* `console`: the node [console object](http://nodejs.org/docs/latest/api/stdio.html)
+* `out`: an alias for [`console.log`](http://nodejs.org/docs/latest/api/stdio.html#console.log)
+* `process`: the node [process object](http://nodejs.org/docs/latest/api/globals.html#process)
+* `require`: the node [require function](http://nodejs.org/docs/latest/api/globals.html#require) to load external modules
+
+Additionally, as discussed in the [jutil](#jutil) section, your script is evaluated inside a function wrapper where `$` refers to the current data, and is generally (barring `--disable-with`) inside `with($) { ... }`. For commands that loop over the input (like [jwhere](#jwhere)), the same is true except `$` refers to one object in the input at a time. You can access the entirety of the data at any time using the global `$$`, mentioned above.
+
+It is worth noting that `this` inside your script also refers to the current data. However, since `this` cannot be undefined or a primitive, using it can lead to some bizarre situations. For example, attempting to call a function with a string as `this` leads the string to be boxed into an object, which breaks equality in weird ways:
+
+````sh
+$ echo '["abc"]' | jwhere 'this === "abc"'
+[]
+````
+
+Yah. So it's probably best to just get in the habit of using `$`, which can be null or undefined or a primitive, for real.
