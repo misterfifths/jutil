@@ -332,7 +332,7 @@ function scriptCommandHandler(runtimeSettings, config, opts)
         if(runtimeSettings.withClause) script += 'with(($ === null || $ === undefined) ? {} : $) { ';
         script += rawScript + ';';
         if(runtimeSettings.withClause) script += ' }';
-        script += ' }).call($data, $data);';
+        script += ' }).call($$, $$);';
         
         try {
             return vm.runInContext(script, runtimeSettings.sandbox, runtimeSettings.scriptPath);
@@ -421,12 +421,12 @@ function mapOverInput(expr, runtimeSettings, handleOne)
     
     if(Array.isArray(data)) {
         for(i = 0; i < data.length; i++) {
-            if(!handleOne(data[i], applyToValue('$data[' + i + ']')))
+            if(!handleOne(data[i], applyToValue('$$[' + i + ']')))
                 return;
         }
     }
     else
-        handleOne(data, applyToValue('$data'));
+        handleOne(data, applyToValue('$$'));
 }
 
 function runPredicate(runtimeSettings, opts, handleMatch)
@@ -623,7 +623,7 @@ function formatCommandHandler(runtimeSettings, config, opts)
         res = '';
     
     if(opts.header) {
-        replacer = replacerFactory(data, '$data');
+        replacer = replacerFactory(data, '$$');
 
         if(opts.header)
             res += prepareFormatString(opts.header).replace(re, replacer) + newline;
@@ -633,17 +633,17 @@ function formatCommandHandler(runtimeSettings, config, opts)
 
     if(Array.isArray(data)) {
         for(i = 0; i < data.length; i++) {
-            replacer = replacerFactory(data[i], '$data[' + i + ']');
+            replacer = replacerFactory(data[i], '$$[' + i + ']');
             res += preparedFormatString.replace(re, replacer) + newline;
         }
     }
     else {
-        replacer = replacerFactory(data, '$data');
+        replacer = replacerFactory(data, '$$');
         res += preparedFormatString.replace(re, replacer) + newline;
     }
 
     if(opts.footer) {
-        replacer = replacerFactory(data, '$data');
+        replacer = replacerFactory(data, '$$');
 
         if(opts.footer)
             res += prepareFormatString(opts.footer).replace(re, replacer) + newline;
@@ -773,7 +773,7 @@ function makeRuntimeSettings(commandDesc, config, opts)
         settings.data = settings.unwrapper(config, settings.data);
     
     // Find modules and load them into a sandbox if the command needs it,
-    // and throw the data in there too as $data
+    // and throw the data in there too as $$
     if(commandDesc.needsSandbox) {
         if(opts.moduleDirectories && opts.moduleDirectories[0] === false) // nomnom turns --no-<list option> into [false]
             settings.modulePaths = [];
@@ -790,7 +790,7 @@ function makeRuntimeSettings(commandDesc, config, opts)
     
         settings.sandbox = vm.createContext({
             $config: config,
-            $data: settings.data,
+            $$: settings.data,
             console: console,
             out: console.log,
             process: process,
