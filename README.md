@@ -208,7 +208,7 @@ $ curl -s https://api.twitter.com/1/statuses/public_timeline.json |
 Of the most recent tweeters, user jorge has the most updates: 36870
 ````
 
-And what's the language breakdown in the most recent [Gists](https://gist.github.com/)?
+What's the language breakdown in the most recent [Gists](https://gist.github.com/)?
 
 ````sh
 $ curl -s https://api.github.com/gists |
@@ -225,6 +225,14 @@ $ curl -s https://api.github.com/gists |
    2 C#
    1 Shell
    1 PHP
+````
+
+Shit [aparrish](https://github.com/aparrish)'s [@everyword](https://twitter.com/everyword) says:
+
+````sh
+$ curl -s http://api.twitter.com/1/statuses/user_timeline.json?screen_name=everyword |
+  jformat -n '%text, ' |
+  say -v Alex -f -
 ````
 
 The pipe is your friend.
