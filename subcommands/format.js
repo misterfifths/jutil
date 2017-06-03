@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 const processors = require('../processors.js');
 

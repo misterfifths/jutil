@@ -140,7 +140,8 @@ parseCommandLine({
     select: require('./subcommands/select.js'),
     props: require('./subcommands/props.js'),
     format: require('./subcommands/format.js'),
-    sort: require('./subcommands/sort.js')
+    sort: require('./subcommands/sort.js'),
+    join: require('./subcommands/join.js')
 });
 
 
@@ -193,32 +194,34 @@ function makeRuntimeSettings(commandDesc, config, opts)
         settings.unwrapper = function(config, obj) { return obj[opts.unwrapProperty]; };
     
     settings.verbose = opts.verbose;
-    
-    if(opts.file)
-        settings.file = opts.file;
-    else
-        settings.file = '/dev/stdin';
-    
-    try {
-        settings.input = fs.readFileSync(settings.file, { 'encoding': 'utf8' });
-    }
-    catch(exc) {
-        console.error('Error: Unable to load input file "' + settings.file + '": ' + exc);
-        process.exit(1);
-    }
-    
+
     settings.inputParser = config.inputParser;
     
-    try {
-        settings.data = settings.inputParser(config, settings.input);
+    if(commandDesc.hasFileOption === undefined || commandDesc.hasFileOption) {
+        if(opts.file)
+            settings.file = opts.file;
+        else
+            settings.file = '/dev/stdin';
+
+        try {
+            settings.input = fs.readFileSync(settings.file, { 'encoding': 'utf8' });
+        }
+        catch(exc) {
+            console.error('Error: Unable to load input file "' + settings.file + '": ' + exc);
+            process.exit(1);
+        }
+
+        try {
+            settings.data = settings.inputParser(config, settings.input);
+        }
+        catch(exc) {
+            console.error('Error parsing input: ' + exc + '.\nInput:\n' + settings.input);
+            process.exit(1);
+        }
+
+        if(settings.unwrapper)
+            settings.data = settings.unwrapper(config, settings.data);
     }
-    catch(exc) {
-        console.error('Error parsing input: ' + exc + '.\nInput:\n' + settings.input);
-        process.exit(1);
-    }
-    
-    if(settings.unwrapper)
-        settings.data = settings.unwrapper(config, settings.data);
     
     // Find modules and load them into a sandbox if the command needs it,
     // and throw the data in there too as $$
@@ -353,7 +356,7 @@ function parseCommandLine(commands)
         parser = require('nomnom'),
         shallowCopy = utils.shallowCopy;
 
-    let globalOpts = {
+    const globalOpts = {
         unwrapProperty: {
             abbr: 'u',
             metavar: 'KEY',
@@ -366,12 +369,6 @@ function parseCommandLine(commands)
             full: 'auto-unwrap',
             flag: true,
             help: 'Attempt to intelligently extract a useful property of the loaded data to run against.'
-        },
-        file: {
-            abbr: 'f',
-            metavar: 'FILE',
-            help: 'Load data from the given file instead of reading from stdin.',
-            type: 'string'
         },
         configPath: {
             abbr: 'c',
@@ -387,8 +384,17 @@ function parseCommandLine(commands)
             help: 'Be verbose about things (e.g. module loading).'
         }
     };
+
+    const fileOpt = {
+        file: {
+            abbr: 'f',
+            metavar: 'FILE',
+            help: 'Load data from the given file instead of reading from stdin.',
+            type: 'string'
+        }
+    };
     
-    let objectOutputOpts = {
+    const objectOutputOpts = {
         prettyPrint: {
             abbr: 'p',
             full: 'pretty-print',
@@ -403,7 +409,7 @@ function parseCommandLine(commands)
         }
     };
 
-    let smartOutputOpt = {
+    const smartOutputOpt = {
         disableSmartOutput: {
             abbr: 'S',
             full: 'disable-smart',
@@ -412,7 +418,7 @@ function parseCommandLine(commands)
         }
     };
     
-    let sandboxOpts = {
+    const sandboxOpts = {
         moduleDirectories: {
             abbr: 'M',
             full: 'module-dir',
@@ -431,7 +437,7 @@ function parseCommandLine(commands)
         }
     };
     
-    let withClauseOpt = {
+    const withClauseOpt = {
         disableWithClause: {
             abbr: 'W',
             full: 'disable-with',
@@ -490,6 +496,11 @@ function parseCommandLine(commands)
         // place to just make one call.
 
         shallowCopy(globalOpts, commandDesc.options);
+
+        // This one is on by default, so consider omission to be truthy
+        if(commandDesc.hasFileOption === undefined || commandDesc.hasFileOption) {
+            shallowCopy(fileOpt, commandDesc.options);
+        }
 
         if(commandDesc.outputsObject) {
             commandDesc.hasSmartOutput = true;  // outputsObject implies hasSmartOutput
