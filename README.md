@@ -359,15 +359,15 @@ echo '[ { "name": "Sam" }, { "name": "Lou" } ]' | jselect '{ name: name, hash: $
 
 ## More on the context in which your scripts execute
 
-Commands that accept scripts on the command line run those scripts inside a [V8 sandbox](http://nodejs.org/docs/latest/api/vm.html#vm.createContext). This is the same sandbox where [modules](#modules) are loaded, hence the ability for modules to make functionality available to your scripts.
+Commands that accept scripts on the command line run those scripts inside a [V8 sandbox](https://nodejs.org/docs/latest/api/vm.html). This is the same sandbox where [modules](#modules) are loaded, hence the ability for modules to make functionality available to your scripts.
 
 The sandbox is populated with the following globals (in addition to the standard JavaScript ones):
 
 * `$config`: the contents of the user's [config file](#config-files), or the default configuration if no config file was loaded
 * `$$`: all of the loaded data, after any [unwrapping](#unwrapping)
-* `console`: the node [console object](http://nodejs.org/docs/latest/api/stdio.html)
-* `out`: an alias for [`console.log`](http://nodejs.org/docs/latest/api/stdio.html#console.log)
-* `process`: the node [process object](http://nodejs.org/docs/latest/api/globals.html#process)
-* `require`: the node [require function](http://nodejs.org/docs/latest/api/globals.html#require) to load external modules
+* `console`: the node [console object](https://nodejs.org/docs/latest/api/console.html)
+* `out`: an alias for [`console.log`](https://nodejs.org/docs/latest/api/console.html#console_console_log_data_args)
+* `process`: the node [process object](https://nodejs.org/docs/latest/api/globals.html#globals_process)
+* `require`: the node [require function](https://nodejs.org/docs/latest/api/globals.html#globals_require) to load external modules
 
 Additionally, as discussed in the [jutil](#jutil) section, your script is evaluated inside a function wrapper where `$` refers to the current data, and is generally (barring `--disable-with`) inside `with($) { ... }`. For commands that loop over the input (like [jwhere](#jwhere)), the same is true except `$` refers to one object in the input at a time. You can access the entirety of the data at any time using the global `$$`, mentioned above.
