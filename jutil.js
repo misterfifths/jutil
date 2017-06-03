@@ -311,7 +311,7 @@ function outputString(str, runtimeSettings, config)
             
             pager = require('child_process')
                 .spawn(pagerCmd, pagerArgs, {
-                    customFds: [-1, process.stdout.fd, -1]
+                    stdio: ['pipe', process.stdout, 'pipe']
                 });
             
             pager.stderr.setEncoding('utf8');
