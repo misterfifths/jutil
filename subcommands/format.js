@@ -1,7 +1,6 @@
 "use strict";
 
-const processors = require('../processors.js'),
-      vm = require('vm');
+const processors = require('../processors.js');
 
 module.exports = {
     help: 'Iterate over the input, printing the result of the given format string for each object.',
@@ -37,7 +36,7 @@ module.exports = {
     handler: formatCommandHandler
 };
 
-function replacerFactory(runtimeSettings, data, dataString)
+function replacerFactory(runtimeSettings, data)
 {
     return function(match, unbracketed, bracketed) {
         // Short-circuit this case; this can only be a property name
@@ -45,19 +44,9 @@ function replacerFactory(runtimeSettings, data, dataString)
         if(unbracketed)
             return data[unbracketed];
 
-        // Otherwise, evaluate the expression
-        // TODO: slight modifications on this are used in a few places;
-        // would be good to make this a function.
-        let res,
-            script;
+        let evaluator = processors.sandboxEvaluatorFactory(bracketed, runtimeSettings);
+        let res = evaluator(data);
 
-        script = '(function($) { ';
-        if(runtimeSettings.withClause) script += 'with(($ === null || $ === undefined) ? {} : $) { ';
-        script += 'return (' + bracketed + ');';
-        if(runtimeSettings.withClause) script += ' }';
-        script += ' }).call(' + dataString + ', ' + dataString + ');';
-
-        res = vm.runInContext(script, runtimeSettings.sandbox);
         if(res === null) return 'null';
         if(res === undefined) return 'undefined';
         return res.toString();
@@ -81,36 +70,32 @@ function formatCommandHandler(runtimeSettings, config, opts)
 
     let format = opts.format,
         re = /%([\w%]+)|%\{(?=[^}]*\})([^}]*)\}/gm,
-        data = runtimeSettings.data,
+        data = runtimeSettings.sandbox.$$,
         preparedFormatString,
         newline = opts.noNewline ? '' : '\n',
         res = '';
     
     if(opts.header) {
-        let replacer = replacerFactory(runtimeSettings, data, '$$');
-
-        if(opts.header)
-            res += prepareFormatString(opts.header).replace(re, replacer) + newline;
+        let replacer = replacerFactory(runtimeSettings, data);
+        res += prepareFormatString(opts.header).replace(re, replacer) + newline;
     }
 
     preparedFormatString = prepareFormatString(format);
 
     if(Array.isArray(data)) {
         for(let i = 0; i < data.length; i++) {
-            let replacer = replacerFactory(runtimeSettings, data[i], '$$[' + i + ']');
+            let replacer = replacerFactory(runtimeSettings, data[i]);
             res += preparedFormatString.replace(re, replacer) + newline;
         }
     }
     else {
-        let replacer = replacerFactory(runtimeSettings, data, '$$');
+        let replacer = replacerFactory(runtimeSettings, data);
         res += preparedFormatString.replace(re, replacer) + newline;
     }
 
     if(opts.footer) {
-        let replacer = replacerFactory(runtimeSettings, data, '$$');
-
-        if(opts.footer)
-            res += prepareFormatString(opts.footer).replace(re, replacer) + newline;
+        let replacer = replacerFactory(runtimeSettings, data);
+        res += prepareFormatString(opts.footer).replace(re, replacer) + newline;
     }
 
     return res;

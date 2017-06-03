@@ -1,8 +1,8 @@
 "use strict";
 
 const fs = require('fs'),
-      vm = require('vm'),
-      utils = require('../utils.js');
+      utils = require('../utils.js'),
+      processors = require('../processors.js');
 
 module.exports = {
     help: 'Run a script against the loaded data, outputting its return value.',
@@ -47,14 +47,9 @@ function scriptCommandHandler(runtimeSettings, config, opts)
     }
     
     if(rawScript) {
-        let script = '(function($) { ';
-        if(runtimeSettings.withClause) script += 'with(($ === null || $ === undefined) ? {} : $) { ';
-        script += rawScript + ';';
-        if(runtimeSettings.withClause) script += ' }';
-        script += ' }).call($$, $$);';
-        
         try {
-            return vm.runInContext(script, runtimeSettings.sandbox, { 'filename': opts.scriptPath });
+            let evaluator = processors.sandboxEvaluatorFactory(rawScript, runtimeSettings, false, { 'filename': opts.scriptPath });
+            return evaluator(runtimeSettings.sandbox.$$);
         }
         catch(exc) {
             console.error('Error running script: ' + exc);

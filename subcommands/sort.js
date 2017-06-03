@@ -1,7 +1,6 @@
 "use strict";
 
-const processors = require('../processors.js'),
-      vm = require('vm');
+const processors = require('../processors.js');
 
 module.exports = {
     help: 'Sort the objects in the input by a given key expression.',

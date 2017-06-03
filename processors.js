@@ -3,44 +3,37 @@
 const vm = require('vm');
 
 module.exports = {
+    sandboxEvaluatorFactory,
     mapOverInput,
     runPredicate
 };
 
+function sandboxEvaluatorFactory(expr, runtimeSettings, needsReturn = true, runInContextOptions = {})
+{
+    let script = '($ => { ';
+    if(runtimeSettings.withClause) script += 'with(($ === null || $ === undefined) ? {} : $) { ';
+    if(needsReturn) script += 'return (';
+    script += expr;
+    if(needsReturn) script += ');';
+    if(runtimeSettings.withClause) script += ' }';
+    script += ' })';
+
+    return vm.runInContext(script, runtimeSettings.sandbox, runInContextOptions);
+}
 
 function mapOverInput(expr, runtimeSettings, handleOne)
 {
-    function applyToValue(valueStr)
-    {
-        // If the array contains undefined or null, this gets funky.
-        // Function.apply() with one of those turns 'this' into the global
-        // object, which is not what was intended, certainly. That's
-        // why we recommend using $ to access the data, rather than 'this'.
-        // Ewwww... also doing function.apply(<primitive>) will cause the
-        // primitive to be autoboxed, which may do Bad Things.
-        var script = '(function($) { ';
-        if(runtimeSettings.withClause) script += 'with(($ === null || $ === undefined) ? {} : $) { ';
-        script += 'return (' + expr + ');';
-        if(runtimeSettings.withClause) script += ' }';
-        script += ' }).call(' + valueStr + ', ' + valueStr + ');';
-        
-        return vm.runInContext(script, runtimeSettings.sandbox);
-    }
-    
-    let data = runtimeSettings.data;
-    
-    // TODO: there's probably a better way to do this, all inside the sandbox,
-    // rather than a bunch of calls into it. But eh, will it make that much
-    // of a difference, speed-wise?
-    
+    let data = runtimeSettings.sandbox.$$,
+        evaluator = sandboxEvaluatorFactory(expr, runtimeSettings);
+
     if(Array.isArray(data)) {
-        for(let i = 0; i < data.length; i++) {
-            if(!handleOne(data[i], applyToValue('$$[' + i + ']')))
+        for(let datum of data) {
+            if(!handleOne(datum, evaluator(datum)))
                 return;
         }
     }
     else
-        handleOne(data, applyToValue('$$'));
+        handleOne(data, evaluator(data));
 }
 
 
@@ -51,7 +44,7 @@ function runPredicate(runtimeSettings, opts, handleMatch)
     // This shouldn't be a problem if people don't use 'this' to refer to the
     // current datum, this sidestepping boxing.
     let expr = '!!(' + opts.predicate + ')';
-    
+
     mapOverInput(expr, runtimeSettings, function(raw, matched) {
         if(matched)
             return handleMatch(raw);

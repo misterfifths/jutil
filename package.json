@@ -8,7 +8,7 @@
         "type": "git",
         "url": "http://github.com/misterfifths/jutil.git"
     },
-    "files": [ "jutil.js" ],
+    "files": [ "*.js", "subcommands" ],
     "main": "./jutil",
     "bin": {
         "jutil": "./jutil.js",
