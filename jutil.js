@@ -279,7 +279,7 @@ function loadModules(modulePaths, sandbox)
     
         try {
             moduleContents = fs.readFileSync(modulePath, 'utf8');
-            vm.runInContext(moduleContents, sandbox, modulePath);
+            vm.runInContext(moduleContents, sandbox, { 'filename': modulePath });
         }
         catch(exc) {
             console.warn('Warning: error loading module "' + modulePath + '": ' + exc);
@@ -586,7 +586,7 @@ function loadConfig(defaultConfig, configPath)
             require: require
         });
         
-        vm.runInContext(configFile, configSandbox, realConfigPath);
+        vm.runInContext(configFile, configSandbox, { 'filename': realConfigPath });
         userConfig = configSandbox.config;
     }
     catch(exc) {

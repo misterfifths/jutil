@@ -55,7 +55,7 @@ function scriptCommandHandler(runtimeSettings, config, opts)
         script += ' }).call($$, $$);';
         
         try {
-            return vm.runInContext(script, runtimeSettings.sandbox, runtimeSettings.scriptPath);
+            return vm.runInContext(script, runtimeSettings.sandbox, { 'filename': runtimeSettings.scriptPath });
         }
         catch(exc) {
             console.error('Error running script: ' + exc);
