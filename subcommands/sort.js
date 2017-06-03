@@ -38,14 +38,14 @@ function sortCommandHandler(runtimeSettings, config, opts)
         return data;
     
     // Generate keys and stash them in keyedData
-    processors.mapOverInput(expr, runtimeSettings, function(obj, key) {
+    processors.mapOverInput(expr, runtimeSettings, (obj, key) => {
         if(opts.ignoreCase && typeof key == 'string') key = key.toLowerCase();
         keyedData.push({ key: key, obj: obj });
         return true;
     });
 
     // Sort keyedData on keys
-    keyedData.sort(function(x, y) {
+    keyedData.sort((x, y) => {
         if(x.key == y.key) return 0;
         if(x.key < y.key) return opts.descending ? 1 : -1;
         return opts.descending ? -1 : 1;

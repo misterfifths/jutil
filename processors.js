@@ -45,7 +45,7 @@ function runPredicate(runtimeSettings, opts, handleMatch)
     // current datum, this sidestepping boxing.
     let expr = '!!(' + opts.predicate + ')';
 
-    mapOverInput(expr, runtimeSettings, function(raw, matched) {
+    mapOverInput(expr, runtimeSettings, (raw, matched) => {
         if(matched)
             return handleMatch(raw);
         

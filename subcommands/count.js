@@ -20,13 +20,17 @@ function countCommandHandler(runtimeSettings, config, opts)
 {
     let res = 0;
     
-    if(!opts.predicate)
-        opts.predicate = 'true';
-    
-    processors.runPredicate(runtimeSettings, opts, function(match) {
-        res++;
-        return true;
-    });
+    if(!opts.predicate) {
+        // Short-circuit the no-predicate case
+        if(Array.isArray(runtimeSettings.data)) res = runtimeSettings.data.length;
+        else res = 1;  // kind of nonsense, but keeping for backwards compatibility
+    }
+    else {
+        processors.runPredicate(runtimeSettings, opts, match => {
+            res++;
+            return true;
+        });
+    }
     
     return res.toString() + '\n';
 }

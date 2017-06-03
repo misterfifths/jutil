@@ -21,7 +21,7 @@ function whereCommandHandler(runtimeSettings, config, opts)
 {
     let res = [];
     
-    processors.runPredicate(runtimeSettings, opts, function(match) {
+    processors.runPredicate(runtimeSettings, opts, match => {
         res.push(match);
         return true;
     });

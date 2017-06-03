@@ -23,7 +23,7 @@ function selectCommandHandler(runtimeSettings, config, opts)
 
     let res = [];
     
-    processors.mapOverInput(opts.shaper, runtimeSettings, function(raw, shaped) {
+    processors.mapOverInput(opts.shaper, runtimeSettings, (raw, shaped) => {
         res.push(shaped);
         return true;
     });
