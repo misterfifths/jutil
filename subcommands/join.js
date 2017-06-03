@@ -10,7 +10,7 @@ module.exports = {
             position: 1,
             list: true,
             required: true,
-            help: 'JSON files to join together. The root object of each must be an array. (At least one is required)'
+            help: 'JSON files to join together. Arrays will be joined together, and objects will be added to an array. (At least one is required)'
         }
     },
     hasFileOption: false,
@@ -47,12 +47,10 @@ function joinCommandHandler(runtimeSettings, config, opts)
         if(runtimeSettings.unwrapper)
             data = runtimeSettings.unwrapper(config, data);
 
-        if(!Array.isArray(data)) {
-            console.error('Error: All input files must be arrays or unwrap to arrays.');
-            process.exit(1);
-        }
-
-        res.push.apply(res, data);
+        if(Array.isArray(data))
+            res.push.apply(res, data);
+        else
+            res.push(data);
     }
 
     return res;
