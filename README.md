@@ -193,7 +193,7 @@ L O A D I N G....OH!: 15045 tweets, follower/friend ratio: 1.18
 This tool joins together the objects in multiple JSON files. If given arrays, they are all concatenated. If given objects, they are placed in an array. For example, assume we have a few files: `array_1-3.json` and `array_3-5.json` that contain array of their titular numbers. Then:
 
 ```sh
-$ jjoin array_1-5.json array_6-10.json
+$ jjoin array_1-3.json array_3-5.json
 [
     1,
     2,
