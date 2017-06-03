@@ -333,12 +333,7 @@ function outputString(str, runtimeSettings, config)
         }
     }
     
-    // process.stdout.write seems like the obvious choice here, but
-    // it causes an exception if we pipe a big result to something
-    // and close the whole shebang before it can finish writing.
-    // Should probably file a node bug...
-    buffer = new Buffer(str);
-    require('fs').write(process.stdout.fd, buffer, 0, buffer.length);
+    process.stdout.write(str);
 }
 
 function outputObject(obj, runtimeSettings, config)
