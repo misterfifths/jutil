@@ -6,7 +6,7 @@ const vm = require('vm'),
       path = require('path'),
       utils = require('./utils.js');
 
-var defaultConfig = {
+const defaultConfig = {
     // All files with a .js extension in these directories will be loaded
     // before evaulating the input.
     moduleDirectories: ['~/.jutil/modules'],
@@ -148,7 +148,7 @@ parseCommandLine({
 
 function runCommand(commandDesc, opts)
 {
-    var config = loadConfig(defaultConfig, opts.configPath),
+    let config = loadConfig(defaultConfig, opts.configPath),
         runtimeSettings = makeRuntimeSettings(commandDesc, config, opts),
         res = commandDesc.handler(runtimeSettings, config, opts);
 
@@ -163,8 +163,7 @@ function runCommand(commandDesc, opts)
 // a sandbox, as well as loading and parsing the input file (or stdin).
 function makeRuntimeSettings(commandDesc, config, opts)
 {
-    var settings = {},
-        dirs;
+    let settings = {};
     
     if(commandDesc.hasSmartOutput) {
         if(opts.disableSmartOutput || !process.stdout.isTTY) settings.smartOutput = false;
@@ -227,7 +226,7 @@ function makeRuntimeSettings(commandDesc, config, opts)
         if(opts.moduleDirectories && opts.moduleDirectories[0] === false) // nomnom turns --no-<list option> into [false]
             settings.modulePaths = [];
         else if(opts.moduleDirectories) {
-            dirs = opts.moduleDirectories;
+            let dirs = opts.moduleDirectories;
             dirs.push.apply(dirs, config.moduleDirectories);
             settings.modulePaths = findModules(dirs);
         }
@@ -254,15 +253,9 @@ function makeRuntimeSettings(commandDesc, config, opts)
 
 function loadModules(modulePaths, sandbox)
 {
-    var i,
-        modulePath,
-        moduleContents;
-
-    for(i = 0; i < modulePaths.length; i++) {
-        modulePath = modulePaths[i];
-    
+    for(let modulePath of modulePaths) {
         try {
-            moduleContents = fs.readFileSync(modulePath, { 'encoding': 'utf8' });
+            const moduleContents = fs.readFileSync(modulePath, { 'encoding': 'utf8' });
             vm.runInContext(moduleContents, sandbox, { 'filename': modulePath });
         }
         catch(exc) {
@@ -271,53 +264,55 @@ function loadModules(modulePaths, sandbox)
     }
 }
 
-function outputString(str, runtimeSettings, config)
+function stringHasMoreLinesThanStdout(str)
 {
-    var buffer,
-        lineCount,
-        pagerCmd,
-        pagerSplit,
-        pagerArgs = [],
-        pager;
-
-    if(runtimeSettings.smartOutput) {
-        lineCount = str.length - str.replace(new RegExp('\n', 'g'), '').length;
-        if(lineCount > process.stdout.getWindowSize()[1]) {
-            // Autopage
-            pagerCmd = process.env.PAGER || 'less';
-
-            // TODO: this is a pretty naive processing of arguments embedded in $PAGER
-            if(pagerCmd.indexOf(' ') != -1) {
-                pagerSplit = pagerCmd.split(' ');
-                pagerCmd = pagerSplit[0];
-                pagerArgs = pagerSplit.slice(1);
-            }
-            
-            pager = require('child_process')
-                .spawn(pagerCmd, pagerArgs, {
-                    stdio: ['pipe', process.stdout, 'pipe']
-                });
-            
-            pager.stderr.setEncoding('utf8');
-            pager.stderr.on('data', function(data) {
-                console.error('Error running pager command ("' + pagerCmd + '"): ' + data);
-                process.exit(1);
-            });
-             
-            pager.stdin.end(str);
-            pager.stdin.on('error', function(exc) {
-                // Silence EPIPE; just means that they closed the pager before
-                // we finished writing (or the pager never started, in which
-                // case the stderr output will be sufficient).
-                if(exc.code != 'EPIPE')
-                    throw exc;
-            });
-            
-            return;
+    const stdoutHeight = process.stdout.getWindowSize()[1];
+    let lineCount = 0;
+    for(let chr of str) {
+        if(chr == '\n') {
+            lineCount++;
+            if(lineCount > stdoutHeight) return true;
         }
     }
-    
-    process.stdout.write(str);
+
+    return false;
+}
+
+function outputString(str, runtimeSettings, config)
+{
+    if(runtimeSettings.smartOutput && stringHasMoreLinesThanStdout(str)) {
+        // Autopage
+        let pagerCmd = process.env.PAGER || 'less';
+        let pagerArgs = [];
+
+        // TODO: this is a pretty naive processing of arguments embedded in $PAGER
+        if(pagerCmd.indexOf(' ') != -1) {
+            let pagerSplit = pagerCmd.split(' ');
+            pagerCmd = pagerSplit[0];
+            pagerArgs = pagerSplit.slice(1);
+        }
+
+        let pager = require('child_process').spawn(pagerCmd, pagerArgs, {
+                        stdio: ['pipe', process.stdout, 'pipe']
+                    });
+
+        pager.stderr.setEncoding('utf8');
+        pager.stderr.on('data', function(data) {
+            console.error('Error running pager command ("' + pagerCmd + '"): ' + data);
+            process.exit(1);
+        });
+
+        pager.stdin.end(str);
+        pager.stdin.on('error', function(exc) {
+            // Silence EPIPE; just means that they closed the pager before
+            // we finished writing (or the pager never started, in which
+            // case the stderr output will be sufficient).
+            if(exc.code != 'EPIPE')
+                throw exc;
+        });
+    }
+    else
+        process.stdout.write(str);
 }
 
 function outputObject(obj, runtimeSettings, config)
@@ -351,22 +346,14 @@ function outputObject(obj, runtimeSettings, config)
 
 function parseCommandLine(commands)
 {
-    var args = process.argv.slice(2),  // remove 'node' and script name
+    let args = process.argv.slice(2),  // remove 'node' and script name
         defaultCommand = 'script',
         scriptName = path.basename(process.argv[1], '.js'),
         firstArg = args[0],
         parser = require('nomnom'),
-        shallowCopy = utils.shallowCopy,
-        globalOpts,
-        objectOutputOpts,
-        smartOutputOpt,
-        sandboxOpts,
-        withClauseOpt,
-        commandName,
-        commandDesc,
-        commandObj;
-    
-    globalOpts = {
+        shallowCopy = utils.shallowCopy;
+
+    let globalOpts = {
         unwrapProperty: {
             abbr: 'u',
             metavar: 'KEY',
@@ -401,7 +388,7 @@ function parseCommandLine(commands)
         }
     };
     
-    objectOutputOpts = {
+    let objectOutputOpts = {
         prettyPrint: {
             abbr: 'p',
             full: 'pretty-print',
@@ -416,7 +403,7 @@ function parseCommandLine(commands)
         }
     };
 
-    smartOutputOpt = {
+    let smartOutputOpt = {
         disableSmartOutput: {
             abbr: 'S',
             full: 'disable-smart',
@@ -425,7 +412,7 @@ function parseCommandLine(commands)
         }
     };
     
-    sandboxOpts = {
+    let sandboxOpts = {
         moduleDirectories: {
             abbr: 'M',
             full: 'module-dir',
@@ -444,7 +431,7 @@ function parseCommandLine(commands)
         }
     };
     
-    withClauseOpt = {
+    let withClauseOpt = {
         disableWithClause: {
             abbr: 'W',
             full: 'disable-with',
@@ -471,7 +458,7 @@ function parseCommandLine(commands)
     parser.script('jutil');
     parser.printer(function(str, code) {
         // Wrap the output at terminal width or 80 characters (if not a terminal)
-        var width = process.stdout.isTTY ? process.stdout.getWindowSize()[0] : 80,
+        let width = process.stdout.isTTY ? process.stdout.getWindowSize()[0] : 80,
             wrap = require('wordwrap')(width);
 
         str = wrap(str) + '\n';
@@ -492,44 +479,39 @@ function parseCommandLine(commands)
         .nocommand()
         .help('Run jutil <command> --help to see command-specific options.\nIf no command is specified, the default is "' + defaultCommand + '".');
     
-    for(commandName in commands) {
-        if(commands.hasOwnProperty(commandName)) {
-            commandDesc = commands[commandName];
-            commandObj = parser.command(commandName);
-            
-            commandObj.help(commandDesc.help);
-            
-            // nomnom seems to freak out if we call options() more than once
-            // on a command object, wo we're gathering all the options in one
-            // place to just make one call.
-            
-            shallowCopy(globalOpts, commandDesc.options);
-            
-            if(commandDesc.outputsObject) {
-                commandDesc.hasSmartOutput = true;  // outputsObject implies hasSmartOutput
-                shallowCopy(objectOutputOpts, commandDesc.options);
-            }
+    Object.keys(commands).forEach(commandName => {
+        let commandDesc = commands[commandName];
+        let commandObj = parser.command(commandName);
 
-            if(commandDesc.hasSmartOutput)
-                shallowCopy(smartOutputOpt, commandDesc.options);
-            
-            if(commandDesc.needsSandbox)
-                shallowCopy(sandboxOpts, commandDesc.options);
-            
-            if(commandDesc.hasWithClauseOpt)
-                shallowCopy(withClauseOpt, commandDesc.options);
-            
-            commandObj.options(commandDesc.options);
-            
-            // Go go gadget JS scoping rules!!!
-            (function(commandDesc) {
-                commandObj.callback(function(opts) {
-                    runCommand(commandDesc, opts);
-                });
-            })(commandDesc);
+        commandObj.help(commandDesc.help);
+
+        // nomnom seems to freak out if we call options() more than once
+        // on a command object, wo we're gathering all the options in one
+        // place to just make one call.
+
+        shallowCopy(globalOpts, commandDesc.options);
+
+        if(commandDesc.outputsObject) {
+            commandDesc.hasSmartOutput = true;  // outputsObject implies hasSmartOutput
+            shallowCopy(objectOutputOpts, commandDesc.options);
         }
-    }
-    
+
+        if(commandDesc.hasSmartOutput)
+            shallowCopy(smartOutputOpt, commandDesc.options);
+
+        if(commandDesc.needsSandbox)
+            shallowCopy(sandboxOpts, commandDesc.options);
+
+        if(commandDesc.hasWithClauseOpt)
+            shallowCopy(withClauseOpt, commandDesc.options);
+
+        commandObj.options(commandDesc.options);
+
+        commandObj.callback(function(opts) {
+            runCommand(commandDesc, opts);
+        });
+    });
+
     return parser.parse(args);
 }
 
@@ -538,12 +520,7 @@ function parseCommandLine(commands)
 
 function loadConfig(defaultConfig, configPath)
 {
-    var config = {},
-        realConfigPath,
-        configFile,
-        configSandbox,
-        propName,
-        defaultConfigProperties,
+    let config = {},
         userConfig;
         
     utils.shallowCopy(defaultConfig, config);
@@ -552,9 +529,9 @@ function loadConfig(defaultConfig, configPath)
         return config;
 
     try {
-        realConfigPath = utils.resolvePath(configPath);
-        configFile = fs.readFileSync(realConfigPath, { 'encoding': 'utf8' });
-        configSandbox = vm.createContext({
+        let realConfigPath = utils.resolvePath(configPath);
+        let configFile = fs.readFileSync(realConfigPath, { 'encoding': 'utf8' });
+        let configSandbox = vm.createContext({
             console: console,
             out: console.log,
             process: process,
@@ -602,12 +579,9 @@ function loadConfig(defaultConfig, configPath)
         }
         
         // Copy over any other properties from the config file
-        for(propName in userConfig) {
-            if(userConfig.hasOwnProperty(propName) &&
-               !defaultConfig.hasOwnProperty(propName))
-            {
+        for(let propName in userConfig) {
+            if(userConfig.hasOwnProperty(propName) && !defaultConfig.hasOwnProperty(propName))
                 config[propName] = userConfig[propName];
-            }
         }
     }
     else
@@ -618,14 +592,12 @@ function loadConfig(defaultConfig, configPath)
 
 function copyStringArraySetting(userConfig, config, name)
 {
-    var val, i;
-
     if(userConfig.hasOwnProperty(name)) {
-        val = userConfig[name];
+        let val = userConfig[name];
     
         if(Array.isArray(val)) {
-            for(i = 0; i < val.length; i++) {
-                if(typeof val[i] != 'string') {
+            for(let valItem of val) {
+                if(typeof valItem != 'string') {
                     console.warn('Warning: ' + name + ' property in config file must contain only string elements; ignoring the setting');
                     return;
                 }
@@ -641,7 +613,7 @@ function copyStringArraySetting(userConfig, config, name)
 function copyFunctionSetting(userConfig, config, name, arity)
 {
     if(userConfig.hasOwnProperty(name)) {
-        var val = userConfig[name];
+        let val = userConfig[name];
     
         if(typeof val == 'function') {
             if(val.length == arity)
@@ -669,16 +641,11 @@ function copyBooleanSetting(userConfig, config, name)
 
 function findModules(dirs)
 {
-    var paths = [],
-        moduleDir,
-        allFiles,
-        i,
-        j,
-        file;
-    
-    for(i = 0; i < dirs.length; i++) {
-        moduleDir = utils.resolvePath(dirs[i]);
-        allFiles = [];
+    let paths = [];
+
+    for(let rawDir of dirs) {
+        let moduleDir = utils.resolvePath(rawDir);
+        let allFiles = [];
         
         try {
             allFiles = fs.readdirSync(moduleDir);
@@ -689,8 +656,7 @@ function findModules(dirs)
                 console.warn('Warning: error reading module directory "' + moduleDir + '": ' + exc);
         }
         
-        for(j = 0; j < allFiles.length; j++) {
-            file = allFiles[j];
+        for(let file of allFiles) {
             if(path.extname(file).toLowerCase() == '.js')
                 paths.push(path.join(moduleDir, file));
         }
@@ -705,8 +671,6 @@ function sortObject(obj)
     // on the order in which keys were added to an object. Luckily V8
     // does that, at least for now...
     
-    var sortedKeys, sortedObj, i, key;
-
     if(obj === null || obj === undefined)
         return obj;
 
@@ -726,11 +690,10 @@ function sortObject(obj)
     if(Array.isArray(obj))
         return obj.map(sortObject);
 
-    sortedKeys = Object.keys(obj).sort();
-    sortedObj = {};
+    let sortedKeys = Object.keys(obj).sort();
+    let sortedObj = {};
 
-    for(i = 0; i < sortedKeys.length; i++) {
-        key = sortedKeys[i];
+    for(let key of sortedKeys) {
         sortedObj[key] = sortObject(obj[key]);
     }
     
