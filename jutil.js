@@ -19,7 +19,7 @@ var defaultConfig = {
     // the configuration file
     // obj: the object to format
     // Return a 'pretty' string representation of obj.
-    prettyPrinter: function(config, obj) {
+    prettyPrinter(config, obj) {
         return JSON.stringify(obj, null, config.prettyPrintIndent) + '\n';
     },
 
@@ -31,7 +31,7 @@ var defaultConfig = {
     // the configuration file
     // obj: the object to format
     // Return the string representation of obj.
-    unprettyPrinter: function(config, obj) {
+    unprettyPrinter(config, obj) {
         return JSON.stringify(obj);
     },
     
@@ -43,7 +43,7 @@ var defaultConfig = {
     // input: the string to parse.
     // Return the deserialized object, or throw an exception if the
     // given string is not valid.
-    inputParser: function(config, input) {
+    inputParser(config, input) {
         return JSON.parse(input);
     },
     
@@ -92,7 +92,7 @@ var defaultConfig = {
     // Otherwise if obj has a property named the same as one in the
     // autoUnwrapProperties array, the value of the first matching
     // property is returned.
-    autoUnwrapper: function(config, obj) {
+    autoUnwrapper(config, obj) {
         if(typeof obj != 'object' || Array.isArray(obj))
             return obj;
 
@@ -176,7 +176,7 @@ function makeRuntimeSettings(commandDesc, config, opts)
 {
     var fs = require('fs'),
         vm = require('vm'),
-        isatty = require('tty').isatty(process.stdout.fd),
+        isatty = process.stdout.isTTY,
         settings = {},
         dirs;
     
@@ -215,7 +215,7 @@ function makeRuntimeSettings(commandDesc, config, opts)
         settings.file = '/dev/stdin';
     
     try {
-        settings.input = fs.readFileSync(settings.file, 'utf8');
+        settings.input = fs.readFileSync(settings.file, { 'encoding': 'utf8' });
     }
     catch(exc) {
         console.error('Error: Unable to load input file "' + settings.file + '": ' + exc);
@@ -278,7 +278,7 @@ function loadModules(modulePaths, sandbox)
         modulePath = modulePaths[i];
     
         try {
-            moduleContents = fs.readFileSync(modulePath, 'utf8');
+            moduleContents = fs.readFileSync(modulePath, { 'encoding': 'utf8' });
             vm.runInContext(moduleContents, sandbox, { 'filename': modulePath });
         }
         catch(exc) {
@@ -573,7 +573,7 @@ function loadConfig(defaultConfig, configPath)
 
     try {
         realConfigPath = utils.resolvePath(configPath);
-        configFile = fs.readFileSync(realConfigPath, 'utf8');
+        configFile = fs.readFileSync(realConfigPath, { 'encoding': 'utf8' });
         configSandbox = vm.createContext({
             console: console,
             out: console.log,

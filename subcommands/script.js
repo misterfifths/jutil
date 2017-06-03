@@ -1,5 +1,9 @@
 "use strict";
 
+const fs = require('fs'),
+      vm = require('vm'),
+      utils = require('../utils.js');
+
 module.exports = {
     help: 'Run a script against the loaded data, outputting its return value.',
     options: {
@@ -23,13 +27,8 @@ module.exports = {
 
 function scriptCommandHandler(runtimeSettings, config, opts)
 {
-    var fs = require('fs'),
-        vm = require('vm'),
-        utils = require('../utils.js'),
-        scriptPath,
-        rawScript,
-        script;
-    
+    let rawScript;
+
     if(opts.script && opts.scriptPath) {
         console.error('Error: You cannot specify both a script file (-i/--script) and an inline script.');
         process.exit(1);
@@ -37,25 +36,25 @@ function scriptCommandHandler(runtimeSettings, config, opts)
 
     if(opts.script) rawScript = opts.script;
     else if(opts.scriptPath) {
+        let resolvedScriptPath = utils.resolvePath(opts.scriptPath);
         try {
-            scriptPath = utils.resolvePath(opts.scriptPath);
-            rawScript = fs.readFileSync(scriptPath, 'utf8');
+            rawScript = fs.readFileSync(resolvedScriptPath, { 'encoding': 'utf8' });
         }
         catch(exc) {
-            console.error('Error: Unable to load script file "' + scriptPath + '": ' + exc);
+            console.error('Error: Unable to load script file "' + resolvedScriptPath + '": ' + exc);
             process.exit(1);
         }
     }
     
     if(rawScript) {
-        script = '(function($) { ';
+        let script = '(function($) { ';
         if(runtimeSettings.withClause) script += 'with(($ === null || $ === undefined) ? {} : $) { ';
         script += rawScript + ';';
         if(runtimeSettings.withClause) script += ' }';
         script += ' }).call($$, $$);';
         
         try {
-            return vm.runInContext(script, runtimeSettings.sandbox, { 'filename': runtimeSettings.scriptPath });
+            return vm.runInContext(script, runtimeSettings.sandbox, { 'filename': opts.scriptPath });
         }
         catch(exc) {
             console.error('Error running script: ' + exc);

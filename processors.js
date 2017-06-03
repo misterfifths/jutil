@@ -1,5 +1,7 @@
 "use strict";
 
+const vm = require('vm');
+
 module.exports = {
     mapOverInput,
     runPredicate
@@ -25,16 +27,14 @@ function mapOverInput(expr, runtimeSettings, handleOne)
         return vm.runInContext(script, runtimeSettings.sandbox);
     }
     
-    var vm = require('vm'),
-        data = runtimeSettings.data,
-        i;
+    let data = runtimeSettings.data;
     
     // TODO: there's probably a better way to do this, all inside the sandbox,
     // rather than a bunch of calls into it. But eh, will it make that much
     // of a difference, speed-wise?
     
     if(Array.isArray(data)) {
-        for(i = 0; i < data.length; i++) {
+        for(let i = 0; i < data.length; i++) {
             if(!handleOne(data[i], applyToValue('$$[' + i + ']')))
                 return;
         }
@@ -50,7 +50,7 @@ function runPredicate(runtimeSettings, opts, handleMatch)
     // for instance, !!(new Boolean(false)) is true, which is totally obnoxious.
     // This shouldn't be a problem if people don't use 'this' to refer to the
     // current datum, this sidestepping boxing.
-    var expr = '!!(' + opts.predicate + ')';
+    let expr = '!!(' + opts.predicate + ')';
     
     mapOverInput(expr, runtimeSettings, function(raw, matched) {
         if(matched)

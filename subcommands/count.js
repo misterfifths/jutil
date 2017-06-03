@@ -18,7 +18,7 @@ module.exports = {
 
 function countCommandHandler(runtimeSettings, config, opts)
 {
-    var res = 0;
+    let res = 0;
     
     if(!opts.predicate)
         opts.predicate = 'true';

@@ -18,12 +18,10 @@ function resolvePath(p)
 
 function shallowCopy(source, dest)
 {
-    var keys = Object.keys(source),
-        i,
-        key;
+    var keys = Object.keys(source);
     
-    for(i = 0; i < keys.length; i++) {
-        key = keys[i];
+    for(let i = 0; i < keys.length; i++) {
+        let key = keys[i];
         dest[key] = source[key];
     }
 }

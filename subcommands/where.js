@@ -19,7 +19,7 @@ module.exports = {
 
 function whereCommandHandler(runtimeSettings, config, opts)
 {
-    var res = [];
+    let res = [];
     
     processors.runPredicate(runtimeSettings, opts, function(match) {
         res.push(match);

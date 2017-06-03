@@ -18,12 +18,12 @@ module.exports = {
 
 function firstCommandHandler(runtimeSettings, config, opts)
 {
-    var res;
+    let res;
 
     if(!opts.predicate)
         opts.predicate = 'true';
     
-    processors.runPredicate(runtimeSettings, opts, function(match) {
+    processors.runPredicate(runtimeSettings, opts, match => {
         res = match;
         return false;
     });

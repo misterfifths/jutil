@@ -21,7 +21,7 @@ function selectCommandHandler(runtimeSettings, config, opts)
 {
     // TODO: maybe an option to omit falsy results
 
-    var res = [];
+    let res = [];
     
     processors.mapOverInput(opts.shaper, runtimeSettings, function(raw, shaped) {
         res.push(shaped);
