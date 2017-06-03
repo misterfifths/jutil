@@ -4,11 +4,15 @@
     "homepage": "http://github.com/misterfifths/jutil",
     "version": "0.0.5",
     "author": "Tim Clem",
+    "license": "MIT",
     "repository": {
         "type": "git",
         "url": "http://github.com/misterfifths/jutil.git"
     },
-    "files": [ "*.js", "subcommands" ],
+    "files": [
+        "*.js",
+        "subcommands"
+    ],
     "main": "./jutil",
     "bin": {
         "jutil": "./jutil.js",
