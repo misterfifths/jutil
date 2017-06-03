@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-;(function() {
 "use strict";
 
 var defaultConfig = {
@@ -140,556 +139,20 @@ var defaultConfig = {
 };
 
 // For now (?) we do nothing if imported elsewhere via require
-if(require.main == module) {
-    parseCommandLine({
-        script: {
-            help: 'Run a script against the loaded data, outputting its return value.',
-            options: {
-                script: {
-                    position: 1,
-                    help: 'Script to run against the loaded data; may also be loaded from a file via the -i option.'
-                },
-                scriptPath: {
-                    abbr: 'i',
-                    full: 'script',
-                    metavar: 'FILE',
-                    help: 'Load the script to run from the given file instead of the first positional argument.',
-                    type: 'string'
-                }
-            },
-            outputsObject: true,
-            needsSandbox: true,
-            hasWithClauseOpt: true,
-            handler: scriptCommandHandler
-        },
-        
-        where: {
-            help: 'Iterate over the input, returning only objects that match the given predicate.',
-            options: {
-                predicate: {
-                    position: 1,
-                    required: true,
-                    help: 'Predicate to evaluate for each object in the loaded data. (Required)'
-                }
-            },
-            outputsObject: true,
-            needsSandbox: true,
-            hasWithClauseOpt: true,
-            handler: whereCommandHandler
-        },
-        
-        first: {
-            help: 'Iterate over the input, returning the first object that matches the given predicate.',
-            options: {
-                predicate: {
-                    position: 1,
-                    help: 'Predicate to evaluate for each object in the loaded data. If omitted, the first object from the input will be returned.'
-                }
-            },
-            outputsObject: true,
-            needsSandbox: true,
-            hasWithClauseOpt: true,
-            handler: firstCommandHandler
-        },
-        
-        count: {
-            help: 'Iterate over the input, counting the objects that match the given predicate.',
-            options: {
-                predicate: {
-                    position: 1,
-                    help: 'Predicate to evaluate for each object in the loaded data. If omitted, all objects will be counted.'
-                }
-            },
-            outputsObject: false,
-            needsSandbox: true,
-            hasWithClauseOpt: true,
-            handler: countCommandHandler
-        },
-        
-        select: {
-            help: 'Iterate over the input, accumulating the result of the given expression for each object.',
-            options: {
-                shaper: {
-                    position: 1,
-                    required: true,
-                    help: 'Expression to evaluate for each object in the loaded data. (Required)'
-                }
-            },
-            outputsObject: true,
-            needsSandbox: true,
-            hasWithClauseOpt: true,
-            handler: selectCommandHandler
-        },
-        
-        props: {
-            help: 'Iterate over the input, returning only the given properties of each object.',
-            options: {
-                propMappings: {
-                    position: 1,
-                    list: true,
-                    required: true,
-                    help: 'Names of properties to extract from each object in the loaded data. These are of the form [[key.]*key=][key.]*key, to follow subobjects and optionally rename them in the output. (At least one is required)'
-                }
-            },
-            outputsObject: true,
-            needsSandbox: false,
-            hasWithClauseOpt: false,
-            handler: propsCommandHandler
-        },
-        
-        format: {
-            help: 'Iterate over the input, printing the result of the given format string for each object.',
-            options: {
-                format: {
-                    position: 1,
-                    required: true,
-                    help: 'The format string to use. Tokens are of the form %property or %{expression}. (Required)'
-                },
-                header: {
-                    abbr: 'H',
-                    metavar: 'FORMAT',
-                    help: 'A header to print before the main output; same token syntax as the format string and is evaluated against the data as a whole.',
-                    type: 'string'
-                },
-                footer: {
-                    abbr: 'F',
-                    metavar: 'FORMAT',
-                    help: 'A footer to print after the main output; same token syntax as the format string and is evaluated against the data as a whole.',
-                    type: 'string'
-                },
-                noNewline: {
-                    abbr: 'n',
-                    full: 'no-newline',
-                    flag: true,
-                    help: 'Do not print trailing newline characters after every line.'
-                }
-            },
-            outputsObject: false,
-            hasSmartOutput: true,  // format doesn't spit out JSON, but we do want its output to be subject to autopaging
-            needsSandbox: true,
-            hasWithClauseOpt: true,
-            handler: formatCommandHandler
-        },
-
-        sort: {
-            help: 'Sort the objects in the input by a given key expression.',
-            options: {
-                sortKeyExpr: {
-                    position: 1,
-                    help: 'The expression that provides the sort key for each object in the loaded data. If omitted, defaults to the object itself.'
-                },
-                ignoreCase: {
-                    abbr: 'i',
-                    full: 'ignore-case',
-                    flag: true,
-                    help: 'Ignore case when comparing string sort keys.'
-                },
-                descending: {
-                    abbr: 'r',
-                    full: 'reverse',
-                    flag: true,
-                    help: 'Reverse the result of comparisons; output objects in descending order.'
-                }
-            },
-            outputsObject: true,
-            needsSandbox: true,
-            hasWithClauseOpt: true,
-            handler: sortCommandHandler
-        }
-    });
+if(require.main != module) {
+    return;
 }
 
-
-// Basic script command
-
-function scriptCommandHandler(runtimeSettings, config, opts)
-{
-    var fs = require('fs'),
-        vm = require('vm'),
-        scriptPath,
-        rawScript,
-        script;
-    
-    if(opts.script && opts.scriptPath) {
-        console.error('Error: You cannot specify both a script file (-i/--script) and an inline script.');
-        process.exit(1);
-    }
-
-    if(opts.script) rawScript = opts.script;
-    else if(opts.scriptPath) {
-        try {
-            scriptPath = resolvePath(opts.scriptPath);
-            rawScript = fs.readFileSync(scriptPath, 'utf8');
-        }
-        catch(exc) {
-            console.error('Error: Unable to load script file "' + scriptPath + '": ' + exc);
-            process.exit(1);
-        }
-    }
-    
-    if(rawScript) {
-        script = '(function($) { ';
-        if(runtimeSettings.withClause) script += 'with(($ === null || $ === undefined) ? {} : $) { ';
-        script += rawScript + ';';
-        if(runtimeSettings.withClause) script += ' }';
-        script += ' }).call($$, $$);';
-        
-        try {
-            return vm.runInContext(script, runtimeSettings.sandbox, runtimeSettings.scriptPath);
-        }
-        catch(exc) {
-            console.error('Error running script: ' + exc);
-            process.exit(1);
-        }
-    }
-    
-    // No script to run; just pass through the input
-    return runtimeSettings.data;
-}
-
-
-/// Predicate-based commands (where, first, count)
-
-function whereCommandHandler(runtimeSettings, config, opts)
-{
-    var res = [];
-    
-    runPredicate(runtimeSettings, opts, function(match) {
-        res.push(match);
-        return true;
-    });
-    
-    return res;
-}
-
-function firstCommandHandler(runtimeSettings, config, opts)
-{
-    var res;
-
-    if(!opts.predicate)
-        opts.predicate = 'true';
-    
-    runPredicate(runtimeSettings, opts, function(match) {
-        res = match;
-        return false;
-    });
-    
-    return res;
-}
-
-function countCommandHandler(runtimeSettings, config, opts)
-{
-    var res = 0;
-    
-    if(!opts.predicate)
-        opts.predicate = 'true';
-    
-    runPredicate(runtimeSettings, opts, function(match) {
-        res++;
-        return true;
-    });
-    
-    return res.toString() + '\n';
-}
-
-function mapOverInput(expr, runtimeSettings, handleOne)
-{
-    function applyToValue(valueStr)
-    {
-        // If the array contains undefined or null, this gets funky.
-        // Function.apply() with one of those turns 'this' into the global
-        // object, which is not what was intended, certainly. That's
-        // why we recommend using $ to access the data, rather than 'this'.
-        // Ewwww... also doing function.apply(<primitive>) will cause the
-        // primitive to be autoboxed, which may do Bad Things.
-        var script = '(function($) { ';
-        if(runtimeSettings.withClause) script += 'with(($ === null || $ === undefined) ? {} : $) { ';
-        script += 'return (' + expr + ');';
-        if(runtimeSettings.withClause) script += ' }';
-        script += ' }).call(' + valueStr + ', ' + valueStr + ');';
-        
-        return vm.runInContext(script, runtimeSettings.sandbox);
-    }
-    
-    var vm = require('vm'),
-        data = runtimeSettings.data,
-        i;
-    
-    // TODO: there's probably a better way to do this, all inside the sandbox,
-    // rather than a bunch of calls into it. But eh, will it make that much
-    // of a difference, speed-wise?
-    
-    if(Array.isArray(data)) {
-        for(i = 0; i < data.length; i++) {
-            if(!handleOne(data[i], applyToValue('$$[' + i + ']')))
-                return;
-        }
-    }
-    else
-        handleOne(data, applyToValue('$$'));
-}
-
-function runPredicate(runtimeSettings, opts, handleMatch)
-{
-    // This means of detecting falsiness breaks down for boxed booleans:
-    // for instance, !!(new Boolean(false)) is true, which is totally obnoxious.
-    // This shouldn't be a problem if people don't use 'this' to refer to the
-    // current datum, this sidestepping boxing.
-    var expr = '!!(' + opts.predicate + ')';
-    
-    mapOverInput(expr, runtimeSettings, function(raw, matched) {
-        if(matched)
-            return handleMatch(raw);
-        
-        return true;
-    });
-}
-
-
-//// Shaping commands (select, props, format)
-
-function selectCommandHandler(runtimeSettings, config, opts)
-{
-    // TODO: maybe an option to omit falsy results
-
-    var res = [];
-    
-    mapOverInput(opts.shaper, runtimeSettings, function(raw, shaped) {
-        res.push(shaped);
-        return true;
-    });
-    
-    return res;
-}
-
-function propsCommandHandler(runtimeSettings, config, opts)
-{
-    function getKeyPath(obj, path)
-    {
-        var dotIdx,
-            pathComponent,
-            arrayMap;
-        
-        // We're done; obj is the value we want
-        if(path === undefined)
-            return { value: obj };
-        
-        // Can't go any further; we didn't succeed
-        if(obj === null || obj === undefined)
-            return undefined;
-        
-        // Traverse arrays by mapping the key path getter over every element
-        if(Array.isArray(obj)) {
-            arrayMap = obj.map(function(o) {
-                var res = getKeyPath(o, path);
-                if(res)
-                    return res.value;
-                
-                return {};
-            });
-            
-            return { value: arrayMap };
-        }
-        
-        dotIdx = path.indexOf('.');
-        if(dotIdx == -1) {
-            pathComponent = path;
-            path = undefined;
-        }
-        else {
-            pathComponent = path.substring(0, dotIdx);
-            path = path.substring(dotIdx + 1);
-        }
-        
-        if(!obj.hasOwnProperty(pathComponent))
-            return undefined;
-        
-        return getKeyPath(obj[pathComponent], path);
-    }
-    
-    function setKeyPath(obj, path, value)
-    {
-        var i = 0,
-            pathComponent;
-        
-        path = path.split('.');
-        while(i < path.length - 1) {
-            pathComponent = path[i];
-            
-            if(!obj.hasOwnProperty(pathComponent))
-                obj[pathComponent] = {};
-            
-            obj = obj[pathComponent];
-            i++;
-        }
-        
-        obj[path[i]] = value;
-    }
-    
-    function shapeObj(obj)
-    {
-        var i,
-            mapping,
-            res = {},
-            val;
-        
-        for(i = 0; i < propMappings.length; i++) {
-            mapping = propMappings[i];
-            val = getKeyPath(obj, mapping.from);
-            
-            if(val)
-                setKeyPath(res, mapping.to, val.value);
-        }
-        
-        return res;
-    }
-    
-    var res = [],
-        data = runtimeSettings.data,
-        propMappings = [],
-        i, s, from, to;
-        
-    for(i = 0; i < opts.propMappings.length; i++) {
-        s = opts.propMappings[i].split('=');
-        
-        if(s.length == 1 && s[0].length > 0)
-            from = to = s[0];
-        else if(s.length == 2 && s[0].length > 0 && s[1].length > 0) {
-            to = s[0];
-            from = s[1];
-        }
-        else {
-            console.error('Invalid property mapping: ' + opts.propMappings[i]);
-            process.exit(1);
-        }
-        
-        propMappings.push({ from: from, to: to });
-    }
-    
-    if(Array.isArray(data))
-        return data.map(shapeObj);
-    
-    return shapeObj(data);
-}
-
-function formatCommandHandler(runtimeSettings, config, opts)
-{
-    function replacerFactory(data, dataString)
-    {
-        return function(match, unbracketed, bracketed) {
-            // Short-circuit this case; this can only be a property name
-            // of the object
-            if(unbracketed)
-                return data[unbracketed];
-            
-            // Otherwise, evaluate the expression
-            // TODO: slight modifications on this are used in a few places;
-            // would be good to make this a function.
-            var res,
-                script = '(function($) { ';
-            if(runtimeSettings.withClause) script += 'with(($ === null || $ === undefined) ? {} : $) { ';
-            script += 'return (' + bracketed + ');';
-            if(runtimeSettings.withClause) script += ' }';
-            script += ' }).call(' + dataString + ', ' + dataString + ');';
-
-            res = vm.runInContext(script, runtimeSettings.sandbox);
-            if(res === null) return 'null';
-            if(res === undefined) return 'undefined';
-            return res.toString();
-        };
-    }
-
-    function prepareFormatString(format)
-    {
-        // Thanks, JS, for not having lookbehinds in your regexes.
-        return format.replace(/(\\)?\\n/gm, function(match, escape) { return escape ? '\\n' : '\n'; })
-                     .replace(/(\\)?\\t/gm, function(match, escape) { return escape ? '\\t' : '\t'; })
-                     .replace(/(\\)?\\r/gm, function(match, escape) { return escape ? '\\r' : '\r'; });
-    }
-
-    /*
-    bracketed: /%\{(?=[^}]*\})([^}]*)\}/
-    unbracketed: /%([\w$]+)/
-    */
-
-    var vm = require('vm'),
-        format = opts.format,
-        re = /%([\w%]+)|%\{(?=[^}]*\})([^}]*)\}/gm,
-        data = runtimeSettings.data,
-        i,
-        replacer,
-        preparedFormatString,
-        newline = opts.noNewline ? '' : '\n',
-        res = '';
-    
-    if(opts.header) {
-        replacer = replacerFactory(data, '$$');
-
-        if(opts.header)
-            res += prepareFormatString(opts.header).replace(re, replacer) + newline;
-    }
-
-    preparedFormatString = prepareFormatString(format);
-
-    if(Array.isArray(data)) {
-        for(i = 0; i < data.length; i++) {
-            replacer = replacerFactory(data[i], '$$[' + i + ']');
-            res += preparedFormatString.replace(re, replacer) + newline;
-        }
-    }
-    else {
-        replacer = replacerFactory(data, '$$');
-        res += preparedFormatString.replace(re, replacer) + newline;
-    }
-
-    if(opts.footer) {
-        replacer = replacerFactory(data, '$$');
-
-        if(opts.footer)
-            res += prepareFormatString(opts.footer).replace(re, replacer) + newline;
-    }
-
-    return res;
-}
-
-
-//// Sort command
-
-function sortCommandHandler(runtimeSettings, config, opts)
-{
-    var vm = require('vm'),
-        data = runtimeSettings.data,
-        keyedData = [],
-        i,
-        expr = opts.sortKeyExpr || '$';  // default sort key is the whole object
-    
-    if(!Array.isArray(data))
-        return data;
-    
-    // Generate keys and stash them in keyedData
-    mapOverInput(expr, runtimeSettings, function(obj, key) {
-        keyedData.push({ key: key, obj: obj });
-        return true;
-    });
-
-    // Sort keyedData on keys
-    keyedData.sort(function(x, y) {
-        if(opts.ignoreCase) {
-            if(typeof x.key == 'string') x.key = x.key.toLowerCase();
-            if(typeof y.key == 'string') y.key = y.key.toLowerCase();
-        }
-
-        if(x.key == y.key) return 0;
-        if(x.key < y.key) return opts.descending ? 1 : -1;
-        return opts.descending ? -1 : 1;
-    });
-
-    // Unwrap the objects in keyedData
-    for(i = 0; i < keyedData.length; i++)
-        data[i] = keyedData[i].obj;
-    
-    return data;
-}
+parseCommandLine({
+    script: require('./subcommands/script.js'),
+    where: require('./subcommands/where.js'),
+    first: require('./subcommands/first.js'),
+    count: require('./subcommands/count.js'),
+    select: require('./subcommands/select.js'),
+    props: require('./subcommands/props.js'),
+    format: require('./subcommands/format.js'),
+    sort: require('./subcommands/sort.js')
+});
 
 
 //// Guts
@@ -914,6 +377,7 @@ function parseCommandLine(commands)
         scriptName = require('path').basename(process.argv[1], '.js'),
         firstArg = args[0],
         parser = require('nomnom'),
+        shallowCopy = require('./utils.js').shallowCopy,
         globalOpts,
         objectOutputOpts,
         smartOutputOpt,
@@ -1098,6 +562,7 @@ function loadConfig(defaultConfig, configPath)
 {
     var fs = require('fs'),
         vm = require('vm'),
+        utils = require('./utils.js'),
         config = {},
         realConfigPath,
         configFile,
@@ -1106,13 +571,13 @@ function loadConfig(defaultConfig, configPath)
         defaultConfigProperties,
         userConfig;
         
-    shallowCopy(defaultConfig, config);
+    utils.shallowCopy(defaultConfig, config);
 
     if(!configPath)
         return config;
 
     try {
-        realConfigPath = resolvePath(configPath);
+        realConfigPath = utils.resolvePath(configPath);
         configFile = fs.readFileSync(realConfigPath, 'utf8');
         configSandbox = vm.createContext({
             console: console,
@@ -1227,33 +692,11 @@ function copyBooleanSetting(userConfig, config, name)
 
 //// Helpers
 
-function resolvePath(p)
-{
-    var path = require('path');
-    
-    switch(p.charAt(0)) {
-        case '~': return path.join(process.env.HOME, p.substr(1));
-        case '/': return p;
-        default: return path.join(process.cwd(), p);
-    }
-}
-
-function shallowCopy(source, dest)
-{
-    var keys = Object.keys(source),
-        i,
-        key;
-    
-    for(i = 0; i < keys.length; i++) {
-        key = keys[i];
-        dest[key] = source[key];
-    }
-}
-
 function findModules(dirs)
 {
     var fs = require('fs'),
         path = require('path'),
+        utils = require('./utils.js'),
         paths = [],
         moduleDir,
         allFiles,
@@ -1262,7 +705,7 @@ function findModules(dirs)
         file;
     
     for(i = 0; i < dirs.length; i++) {
-        moduleDir = resolvePath(dirs[i]);
+        moduleDir = utils.resolvePath(dirs[i]);
         allFiles = [];
         
         try {
@@ -1321,5 +764,3 @@ function sortObject(obj)
     
     return sortedObj;
 }
-
-})();

@@ -1,5 +1,5 @@
 #!/bin/bash
 
-jutildir="`dirname $0`"
+cd "`dirname $0`"
 
-jshint "$jutildir/jutil.js" --config "$jutildir/jshint_config.json"
+jshint *.js subcommands/*.js --config jshint_config.json
