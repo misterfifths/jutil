@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 "use strict";
 
+const vm = require('vm'),
+      fs = require('fs'),
+      path = require('path'),
+      utils = require('./utils.js');
+
 var defaultConfig = {
     // All files with a .js extension in these directories will be loaded
     // before evaulating the input.
@@ -95,40 +100,24 @@ var defaultConfig = {
     autoUnwrapper(config, obj) {
         if(typeof obj != 'object' || Array.isArray(obj))
             return obj;
-
-        var propName,
-            onlyPropName,
-            foundOne = false,
-            val,
-            i;
-
-        for(propName in obj) {
-            if(obj.hasOwnProperty(propName)) {
-                foundOne = true;
-            
-                if(onlyPropName) {
-                    onlyPropName = undefined;
-                    break;
-                }
-
-                onlyPropName = propName;
-            }
-        }
         
-        if(!foundOne) {
-            // This object has no properties; nothing we can do
+        const propNames = Object.keys(obj);
+
+        if(propNames.length === 0) {
+            // Nothing to be done
             return obj;
         }
-        
-        if(onlyPropName) {
-            val = obj[onlyPropName];
+        else if(propNames.length == 1) {
+            // One property. If it's an object, use it
+            let val = obj[propNames[0]];
             if(typeof val == 'object' && val !== null)
                 return val;
+            else
+                return obj;
         }
         
         // More than one property. Cross-reference with autoUnwrapProperties
-        for(i = 0; i < config.autoUnwrapProperties.length; i++) {
-            propName = config.autoUnwrapProperties[i];
+        for(let propName of config.autoUnwrapProperties) {
             if(obj.hasOwnProperty(propName))
                 return obj[propName];
         }
@@ -174,14 +163,11 @@ function runCommand(commandDesc, opts)
 // a sandbox, as well as loading and parsing the input file (or stdin).
 function makeRuntimeSettings(commandDesc, config, opts)
 {
-    var fs = require('fs'),
-        vm = require('vm'),
-        isatty = process.stdout.isTTY,
-        settings = {},
+    var settings = {},
         dirs;
     
     if(commandDesc.hasSmartOutput) {
-        if(opts.disableSmartOutput || !isatty) settings.smartOutput = false;
+        if(opts.disableSmartOutput || !process.stdout.isTTY) settings.smartOutput = false;
         else settings.smartOutput = opts.disableSmartOutput === false || !config.disableSmartOutput;
     }
 
@@ -268,9 +254,7 @@ function makeRuntimeSettings(commandDesc, config, opts)
 
 function loadModules(modulePaths, sandbox)
 {
-    var fs = require('fs'),
-        vm = require('vm'),
-        i,
+    var i,
         modulePath,
         moduleContents;
 
@@ -369,10 +353,10 @@ function parseCommandLine(commands)
 {
     var args = process.argv.slice(2),  // remove 'node' and script name
         defaultCommand = 'script',
-        scriptName = require('path').basename(process.argv[1], '.js'),
+        scriptName = path.basename(process.argv[1], '.js'),
         firstArg = args[0],
         parser = require('nomnom'),
-        shallowCopy = require('./utils.js').shallowCopy,
+        shallowCopy = utils.shallowCopy,
         globalOpts,
         objectOutputOpts,
         smartOutputOpt,
@@ -487,8 +471,7 @@ function parseCommandLine(commands)
     parser.script('jutil');
     parser.printer(function(str, code) {
         // Wrap the output at terminal width or 80 characters (if not a terminal)
-        var isatty = require('tty').isatty(process.stdout.fd),
-            width = isatty ? process.stdout.getWindowSize()[0] : 80,
+        var width = process.stdout.isTTY ? process.stdout.getWindowSize()[0] : 80,
             wrap = require('wordwrap')(width);
 
         str = wrap(str) + '\n';
@@ -502,7 +485,7 @@ function parseCommandLine(commands)
         process.exit(code);
     });
 
-    if(require('tty').isatty(process.stdout.fd))
+    if(process.stdout.isTTY)
         parser.colors();
     
     parser
@@ -555,10 +538,7 @@ function parseCommandLine(commands)
 
 function loadConfig(defaultConfig, configPath)
 {
-    var fs = require('fs'),
-        vm = require('vm'),
-        utils = require('./utils.js'),
-        config = {},
+    var config = {},
         realConfigPath,
         configFile,
         configSandbox,
@@ -689,10 +669,7 @@ function copyBooleanSetting(userConfig, config, name)
 
 function findModules(dirs)
 {
-    var fs = require('fs'),
-        path = require('path'),
-        utils = require('./utils.js'),
-        paths = [],
+    var paths = [],
         moduleDir,
         allFiles,
         i,
