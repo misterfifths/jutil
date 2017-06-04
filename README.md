@@ -1,6 +1,6 @@
-[![Build Status](https://travis-ci.org/misterfifths/jutil.svg?branch=master)](https://travis-ci.org/misterfifths/jutil) [![Coverage Status](https://coveralls.io/repos/github/misterfifths/jutil/badge.svg?branch=tests)](https://coveralls.io/github/misterfifths/jutil?branch=tests)
-
 # *jutil*: Poke at JSON from the command line
+
+[![Build Status](https://travis-ci.org/misterfifths/jutil.svg?branch=master)](https://travis-ci.org/misterfifths/jutil) [![Coverage Status](https://coveralls.io/repos/github/misterfifths/jutil/badge.svg?branch=tests)](https://coveralls.io/github/misterfifths/jutil?branch=tests)
 
 Do a lot of testing of JSON APIs from the command line? Insulted by doing mindless greps against structured data? Fingers sore from typing `| python -mjson.tool`?
 
@@ -268,6 +268,10 @@ $ curl -s http://api.twitter.com/1/statuses/user_timeline.json?screen_name=every
 ````
 
 The pipe is your friend.
+
+## More examples
+
+Check out the [literate test scripts](tests) for more examples and details on usage.
 
 
 # Advanced Usage
