@@ -35,7 +35,7 @@ function getKeyPath(obj, path)
     // Traverse arrays by mapping the key path getter over every element
     if(Array.isArray(obj)) {
         arrayMap = obj.map(o => {
-            var res = getKeyPath(o, path);
+            let res = getKeyPath(o, path);
             if(res)
                 return res.value;
             

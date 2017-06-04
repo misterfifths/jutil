@@ -191,7 +191,7 @@ function makeRuntimeSettings(commandDesc, config, opts)
         settings.unwrapper = config.autoUnwrapper;
     
     if(opts.unwrapProperty)
-        settings.unwrapper = function(config, obj) { return obj[opts.unwrapProperty]; };
+        settings.unwrapper = (config, obj) => obj[opts.unwrapProperty];
     
     settings.verbose = opts.verbose;
 
@@ -283,13 +283,13 @@ function outputString(str, runtimeSettings, config)
                     });
 
         pager.stderr.setEncoding('utf8');
-        pager.stderr.on('data', function(data) {
+        pager.stderr.on('data', data => {
             console.error('Error running pager command ("' + pagerCmd + '"): ' + data);
             process.exit(1);
         });
 
         pager.stdin.end(str);
-        pager.stdin.on('error', function(exc) {
+        pager.stdin.on('error', exc => {
             // Silence EPIPE; just means that they closed the pager before
             // we finished writing (or the pager never started, in which
             // case the stderr output will be sufficient).
@@ -445,7 +445,7 @@ function parseCommandLine(commands)
     }
     
     parser.script('jutil');
-    parser.printer(function(str, code) {
+    parser.printer((str, code) => {
         // Wrap the output at terminal width or 80 characters (if not a terminal)
         let width = process.stdout.isTTY ? process.stdout.getWindowSize()[0] : 80,
             wrap = require('wordwrap')(width);
@@ -501,9 +501,7 @@ function parseCommandLine(commands)
 
         commandObj.options(commandDesc.options);
 
-        commandObj.callback(function(opts) {
-            runCommand(commandDesc, opts);
-        });
+        commandObj.callback(opts => runCommand(commandDesc, opts));
     });
 
     return parser.parse(args);

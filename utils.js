@@ -60,7 +60,5 @@ function resolvePath(p)
 
 function shallowCopy(source, dest)
 {
-    Object.keys(source).forEach(key => {
-        dest[key] = source[key];
-    });
+    Object.keys(source).forEach(key => dest[key] = source[key]);
 }

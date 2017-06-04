@@ -38,7 +38,7 @@ module.exports = {
 
 function replacerFactory(runtimeSettings, data)
 {
-    return function(match, unbracketed, bracketed) {
+    return (match, unbracketed, bracketed) => {
         // Short-circuit this case; this can only be a property name
         // of the object
         if(unbracketed)
@@ -56,9 +56,9 @@ function replacerFactory(runtimeSettings, data)
 function prepareFormatString(format)
 {
     // Thanks, JS, for not having lookbehinds in your regexes.
-    return format.replace(/(\\)?\\n/gm, function(match, escape) { return escape ? '\\n' : '\n'; })
-                 .replace(/(\\)?\\t/gm, function(match, escape) { return escape ? '\\t' : '\t'; })
-                 .replace(/(\\)?\\r/gm, function(match, escape) { return escape ? '\\r' : '\r'; });
+    return format.replace(/(\\)?\\n/gm, (match, escape) => escape ? '\\n' : '\n')
+                 .replace(/(\\)?\\t/gm, (match, escape) => escape ? '\\t' : '\t')
+                 .replace(/(\\)?\\r/gm, (match, escape) => escape ? '\\r' : '\r');
 }
 
 function formatCommandHandler(runtimeSettings, config, opts)
