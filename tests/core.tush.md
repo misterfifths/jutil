@@ -132,6 +132,13 @@ $ echo '{}' | jutil -c invalid-config
 @ Warning: config file must assign to the global "config" var; ignoring the file
 ```
 
+Nonexistent configuration files are ignored silently, and the default configuration is used:
+
+```sh
+$ echo '{}' | jutil -c nonexistent-config
+| {}
+```
+
 ## Unwrapping
 
 With some frequency, you may want to operate on just one property of the incoming JSON document. [Unwrapping](../README.md#unwrapping) helps in this case.
@@ -173,6 +180,20 @@ The properties listed in `autoUnwrapProperties` are used in order until one prod
 ```sh
 $ echo '{ "first": [2], "second": [1] }' | jutil -c unwrap-properties-config -a
 | [2]
+```
+
+If none of the properties are found, the object is passed through unchanged:
+
+```sh
+$ echo '{ "oops": 2, "wildcard": [] }' | jutil -c unwrap-properties-config -a
+| {"oops":2,"wildcard":[]}
+```
+
+Similarly:
+
+```sh
+$ echo '{}' | jutil -c unwrap-properties-config -a
+| {}
 ```
 
 ### Via `autoUnwrapper` in config
