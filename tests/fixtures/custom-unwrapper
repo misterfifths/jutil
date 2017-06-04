@@ -1,0 +1,7 @@
+var config = {
+    autoUnwrapper(config, obj) {
+        let sortedKeys = Object.keys(obj).sort();
+        if(sortedKeys.length > 0) return obj[sortedKeys[0]];
+        return obj;
+    }
+};

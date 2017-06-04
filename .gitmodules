@@ -1,0 +1,3 @@
+[submodule "tests/tush"]
+	path = tests/tush
+	url = https://github.com/adolfopa/tush.git
