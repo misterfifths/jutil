@@ -35,7 +35,7 @@ function sortCommandHandler(runtimeSettings, config, opts)
         expr = opts.sortKeyExpr || '$';  // default sort key is the whole object
     
     if(!Array.isArray(data))
-        return data;
+        return [data];  // Consistency with the behavior of where/first/select/etc. when given a non-array
     
     // Generate keys and stash them in keyedData
     processors.mapOverInput(expr, runtimeSettings, (obj, key) => {
