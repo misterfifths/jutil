@@ -3,8 +3,14 @@
 here=`dirname "$0"`
 cd "$here"
 
+if [ ! -d tush/bin ]; then
+    git submodule --quiet update --init tush
+fi
+
 PATH="$(pwd)/tush/bin:$(pwd)/bin:$PATH" \
 TEST_DIR="$(pwd)" \
 JUTIL_CONFIG_PATH="$(pwd)/fixtures/blank_config" \
 FIXTURE_DIR="$(pwd)/fixtures" \
-tush-check -x *.tush.md
+tush-check -x *.tush.md && \
+echo "All tests passed!" ||
+echo -e "\n----------\nTest failure. See diff above"
