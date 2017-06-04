@@ -25,27 +25,7 @@ function joinCommandHandler(runtimeSettings, config, opts)
     let res = [];
 
     for(let inputFile of opts.files) {
-        let input,
-            data;
-
-        try {
-            input = fs.readFileSync(inputFile, { 'encoding': 'utf8' });
-        }
-        catch(exc) {
-            console.error('Error: Unable to load input file "' + runtimeSettings.file + '": ' + exc);
-            process.exit(1);
-        }
-
-        try {
-            data = runtimeSettings.inputParser(config, input);
-        }
-        catch(exc) {
-            console.error('Error parsing input: ' + exc + '.\nInput:\n' + input);
-            process.exit(1);
-        }
-
-        if(runtimeSettings.unwrapper)
-            data = runtimeSettings.unwrapper(config, data);
+        const data = utils.loadJSON(inputFile, runtimeSettings, config);
 
         if(Array.isArray(data))
             res.push.apply(res, data);

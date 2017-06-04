@@ -203,24 +203,7 @@ function makeRuntimeSettings(commandDesc, config, opts)
         else
             settings.file = '/dev/stdin';
 
-        try {
-            settings.input = fs.readFileSync(settings.file, { 'encoding': 'utf8' });
-        }
-        catch(exc) {
-            console.error('Error: Unable to load input file "' + settings.file + '": ' + exc);
-            process.exit(1);
-        }
-
-        try {
-            settings.data = settings.inputParser(config, settings.input);
-        }
-        catch(exc) {
-            console.error('Error parsing input: ' + exc + '.\nInput:\n' + settings.input);
-            process.exit(1);
-        }
-
-        if(settings.unwrapper)
-            settings.data = settings.unwrapper(config, settings.data);
+        settings.data = utils.loadJSON(settings.file, settings, config);
     }
     
     // Find modules and load them into a sandbox if the command needs it,
@@ -258,7 +241,7 @@ function loadModules(modulePaths, sandbox)
 {
     for(let modulePath of modulePaths) {
         try {
-            const moduleContents = fs.readFileSync(modulePath, { 'encoding': 'utf8' });
+            const moduleContents = utils.loadFile(modulePath, false);
             vm.runInContext(moduleContents, sandbox, { 'filename': modulePath });
         }
         catch(exc) {
@@ -541,7 +524,7 @@ function loadConfig(defaultConfig, configPath)
 
     try {
         let realConfigPath = utils.resolvePath(configPath);
-        let configFile = fs.readFileSync(realConfigPath, { 'encoding': 'utf8' });
+        let configFile = utils.loadFile(realConfigPath, false);
         let configSandbox = vm.createContext({
             console: console,
             out: console.log,

@@ -37,13 +37,7 @@ function scriptCommandHandler(runtimeSettings, config, opts)
     if(opts.script) rawScript = opts.script;
     else if(opts.scriptPath) {
         let resolvedScriptPath = utils.resolvePath(opts.scriptPath);
-        try {
-            rawScript = fs.readFileSync(resolvedScriptPath, { 'encoding': 'utf8' });
-        }
-        catch(exc) {
-            console.error('Error: Unable to load script file "' + resolvedScriptPath + '": ' + exc);
-            process.exit(1);
-        }
+        rawScript = utils.loadFile(resolvedScriptPath);
     }
     
     if(rawScript) {
