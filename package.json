@@ -31,12 +31,15 @@
         "wordwrap": ">=0.0.2"
     },
     "devDependencies": {
-        "jshint": ">=0.5.5"
+        "coveralls": "^2.13.1",
+        "jshint": ">=0.5.5",
+        "nyc": "^11.0.2"
     },
     "engines": {
         "node": ">=5.12.0"
     },
     "scripts": {
-        "test": "tests/run_tests"
+        "test": "nyc tests/run_tests",
+        "coverage": "nyc report --reporter=text-lcov | coveralls"
     }
 }
