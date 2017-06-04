@@ -120,7 +120,7 @@ function propsCommandHandler(runtimeSettings, config, opts)
     }
 
     if(Array.isArray(data))
-        return data.map(shapeObj);
+        return data.map(datum => shapeObj(propMappings, datum));
 
     return shapeObj(propMappings, data);
 }
