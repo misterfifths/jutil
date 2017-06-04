@@ -305,3 +305,11 @@ $ echo '{ "hashme": "hello" }' | jutil -M modules 'return _($md5(hashme))'
 ```
 
 By default, `jutil` loads modules from `~/.jutil/modules`.
+
+Modules with errors result in a warning:
+
+```sh
+$ echo '{}' | jutil -m broken-module.js
+| {}
+@ Warning: error loading module "broken-module.js": ReferenceError: nope is not defined
+```
