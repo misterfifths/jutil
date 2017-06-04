@@ -434,10 +434,10 @@ function parseCommandLine(commands)
     if(scriptName != 'jutil')
         args.unshift(scriptName.substr(1));
     else if(!firstArg ||
-            (firstArg != '-h' && firstArg != '--help' && !commands.hasOwnProperty(firstArg)))
+            !commands.hasOwnProperty(firstArg))
     {
         // Otherwise, add in the default command 'script', if appropriate:
-        // --help/-h -> no default
+        // --help/-h -> default
         // no first arg -> default
         // first arg is not a command name -> default
         
