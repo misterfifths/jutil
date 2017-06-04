@@ -2,7 +2,7 @@
 
 This file contains tests of functionality that is shared among all (or most) of the tools in the jutil suite. It can be run using the `run_tests` script. If all tests pass, no output should be produced.
 
-Before we get started, it's worth noting that the `run_tests` script sets the `JUTIL_CONFIG_PATH` environmental variable to point to a blank [configuration file](/#config-files) to ensure we're using default options.
+Before we get started, it's worth noting that the `run_tests` script sets the `JUTIL_CONFIG_PATH` environmental variable to point to a blank [configuration file](../#config-files) to ensure we're using default options.
 
 For convenience, we're going to copy all the [support files](fixtures) for the tests into the test directory:
 
@@ -92,11 +92,11 @@ $ echo '[2, 1]' | jutil -s
 | [2,1]
 ```
 
-To sort arrays, use the [`jsort`](/#jsort) command.
+To sort arrays, use the [`jsort`](../#jsort) command.
 
 ## Configuration Files
 
-A [configuation file](/#config-files) is loaded from `~/.jutil/config` by default. One can also be specified via the command line argument `-c`. Here we're loading [one](fixtures/sort_and_pretty_print_config) that effectively turns on `-p` and `-s`.
+A [configuation file](../#config-files) is loaded from `~/.jutil/config` by default. One can also be specified via the command line argument `-c`. Here we're loading [one](fixtures/sort_and_pretty_print_config) that effectively turns on `-p` and `-s`.
 
 ```sh
 $ echo '{"b": 1, "a": 2}' | jutil -c sort_and_pretty_print_config
@@ -134,7 +134,7 @@ $ echo '{}' | jutil -c invalid-config
 
 ## Unwrapping
 
-With some frequency, you may want to operate on just one property of the incoming JSON document. [Unwrapping](/#unwrapping) helps in this case.
+With some frequency, you may want to operate on just one property of the incoming JSON document. [Unwrapping](../#unwrapping) helps in this case.
 
 ### Basic
 
@@ -186,7 +186,7 @@ $ echo '{ "b": [2], "a": [1] }' | jutil -c custom-unwrapper -a
 
 ## Scripts
 
-The [`script` subcommand](/#jutil), usually accessed by just running `jutil`, is the most basic tool in the suite. It simply runs a script specified on the command line and outputs the result as JSON:
+The [`script` subcommand](../#jutil), usually accessed by just running `jutil`, is the most basic tool in the suite. It simply runs a script specified on the command line and outputs the result as JSON:
 
 ```sh
 $ echo '{}' | jutil 'return { hello: "world" }'
@@ -260,7 +260,7 @@ $ echo '{ "convenient": [1, 2] }' | jutil -W 'return convenient'
 
 ## Modules
 
-You can load simple [modules](/#modules) into the jutil environment. These take the form of a number of Javascript files (or a directory of them). Any global variables or functions in the files will become available in a script executed by jutil.
+You can load simple [modules](../#modules) into the jutil environment. These take the form of a number of Javascript files (or a directory of them). Any global variables or functions in the files will become available in a script executed by jutil.
 
 For example, the [md5.js](fixtures/modules/md5.js) file contains a function, `$md5`, that computes the MD5 hash of a given string and returns it as a base-64 encoded string. If we load it with the `-m` option, we can use the function in our scripts:
 
