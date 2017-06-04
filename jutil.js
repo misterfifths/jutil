@@ -201,7 +201,7 @@ function makeRuntimeSettings(commandDesc, config, opts)
         if(opts.file)
             settings.file = opts.file;
         else
-            settings.file = '/dev/stdin';
+            settings.file = process.stdin.fd;
 
         settings.data = utils.loadJSON(settings.file, settings, config);
     }
