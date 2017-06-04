@@ -272,7 +272,7 @@ The pipe is your friend.
 
 ## Config files
 
-You can set up a variety of default options and tweak the behavior of jutil with a configuration file, which lives at `~/.jutil/config` by default. To specify another configuration file to load, use the `-c` option to any tool.
+You can set up a variety of default options and tweak the behavior of jutil with a configuration file, which lives at `~/.jutil/config` by default. To specify another configuration file to load, use the `-c` option to any tool or set the `JUTIL_CONFIG_PATH` environmental variable.
 
 The config file is a JavaScript file (not strictly JSON; it is essentially `eval`'d) that must at some point assign to a global object called `config`. For example, a config file that turns on key sorting in JSON output by default would look like this:
 

@@ -201,7 +201,7 @@ function makeRuntimeSettings(commandDesc, config, opts)
         if(opts.file)
             settings.file = opts.file;
         else
-            settings.file = process.stdin.fd;
+            settings.file = '/dev/stdin';
 
         settings.data = utils.loadJSON(settings.file, settings, config);
     }
@@ -357,9 +357,9 @@ function parseCommandLine(commands)
             abbr: 'c',
             full: 'config',
             metavar: 'FILE',
-            help: 'Load the given config file. The default is ~/.jutil/config; specify --no-config to use the default configuration.',
+            help: 'Load the given config file. The default is the JUTIL_CONFIG_PATH environmental variable or ~/.jutil/config; specify --no-config to use the default configuration.',
             type: 'string',
-            'default': '~/.jutil/config'
+            'default': process.env.JUTIL_CONFIG_PATH || '~/.jutil/config'
         },
         verbose: {
             abbr: 'v',
