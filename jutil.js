@@ -141,7 +141,10 @@ parseCommandLine({
     props: require('./subcommands/props.js'),
     format: require('./subcommands/format.js'),
     sort: require('./subcommands/sort.js'),
-    join: require('./subcommands/join.js')
+    join: require('./subcommands/join.js'),
+    take: require('./subcommands/take.js'),
+    drop: require('./subcommands/drop.js'),
+    tweak: require('./subcommands/tweak.js')
 });
 
 

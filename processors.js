@@ -21,10 +21,10 @@ function sandboxEvaluatorFactory(expr, runtimeSettings, needsReturn = true, runI
     return vm.runInContext(script, runtimeSettings.sandbox, runInContextOptions);
 }
 
-function mapOverInput(expr, runtimeSettings, handleOne)
+function mapOverInput(expr, runtimeSettings, handleOne, needsReturn = true)
 {
     let data = runtimeSettings.sandbox.$$,
-        evaluator = sandboxEvaluatorFactory(expr, runtimeSettings);
+        evaluator = sandboxEvaluatorFactory(expr, runtimeSettings, needsReturn);
 
     if(Array.isArray(data)) {
         for(let datum of data) {

@@ -16,14 +16,5 @@
 
 ## New commands
 
-- `jtake`: Generalized `jfirst`
 - `jfold`: Like [Haskell's `foldr` and friends](https://wiki.haskell.org/Fold) - initial, iterative expression, reducer
-- `jtweak` (need better name): Script lets you modify `$`, and collects your changes at the end. No return value from script. Inline modifications:
 
-    ```sh
-    $ echo '[{"a": 1, "b":2}]' | jtweak '$.sum = a + b; delete $.b'
-    {
-        "a": 1,
-        "sum": 3
-    }
-    ```

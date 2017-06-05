@@ -89,9 +89,11 @@ $ echo '[0, false, 4, "", "Bob"]' | jwhere $
 ]
 ````
 
-## jfirst
+## jfirst, jtake, jdrop
 
-Accepts a predicate in the same form as `jwhere`, but only returns the first matching object in the data. If no predicate is provided, the first object in the data is returned.
+`jfirst` accepts a predicate in the same form as `jwhere`, but only returns the first matching object in the data. If no predicate is provided, the first object in the data is returned.
+
+`jtake` and `jdrop` select or remove a given number of records from the data, respectively.
 
 ## jcount
 
@@ -225,6 +227,10 @@ $ jjoin first.json second.json third.json
     }
 ]
 ```
+
+## jtweak
+
+This tool lets you modify your data by writing a short script that tweaks the values of records. See the [tests](tests/jtweak.tush.md) for examples.
 
 ## Putting it all together
 

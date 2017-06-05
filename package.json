@@ -2,7 +2,7 @@
     "name": "jutil",
     "description": "Command-line utilities for manipulating JSON",
     "homepage": "http://github.com/misterfifths/jutil",
-    "version": "0.1.1",
+    "version": "0.2.0",
     "author": "Tim Clem",
     "license": "MIT",
     "preferGlobal": true,
@@ -24,7 +24,10 @@
         "jprops": "./jutil.js",
         "jformat": "./jutil.js",
         "jsort": "./jutil.js",
-        "jjoin": "./jutil.js"
+        "jjoin": "./jutil.js",
+        "jtake": "./jutil.js",
+        "jdrop": "./jutil.js",
+        "jtweak": "./jutil.js"
     },
     "dependencies": {
         "nomnom": "1.5.x",
