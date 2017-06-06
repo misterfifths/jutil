@@ -1,6 +1,7 @@
 'use strict';
 
-const processors = require('../processors.js');
+const objectPath = require('object-path'),
+      processors = require('../processors.js');
 
 module.exports = {
     help: 'Iterate over the input, returning only the given properties of each object.',
@@ -18,78 +19,15 @@ module.exports = {
     handler: propsCommandHandler
 };
 
-function getKeyPath(obj, path)
-{
-    let dotIdx,
-        pathComponent,
-        arrayMap;
-
-    // We're done; obj is the value we want
-    if(path === undefined)
-        return { value: obj };
-    
-    // Can't go any further; we didn't succeed
-    if(obj === null || obj === undefined)
-        return undefined;
-
-    // Traverse arrays by mapping the key path getter over every element
-    if(Array.isArray(obj)) {
-        arrayMap = obj.map(o => {
-            let res = getKeyPath(o, path);
-            if(res)
-                return res.value;
-            
-            return {};
-        });
-
-        return { value: arrayMap };
-    }
-
-    dotIdx = path.indexOf('.');
-    if(dotIdx == -1) {
-        pathComponent = path;
-        path = undefined;
-    }
-    else {
-        pathComponent = path.substring(0, dotIdx);
-        path = path.substring(dotIdx + 1);
-    }
-
-    if(!obj.hasOwnProperty(pathComponent))
-        return undefined;
-
-    return getKeyPath(obj[pathComponent], path);
-}
-
-function setKeyPath(obj, path, value)
-{
-    let i = 0,
-        pathComponent;
-
-    path = path.split('.');
-    while(i < path.length - 1) {
-        pathComponent = path[i];
-
-        if(!obj.hasOwnProperty(pathComponent))
-            obj[pathComponent] = {};
-
-        obj = obj[pathComponent];
-        i++;
-    }
-
-    obj[path[i]] = value;
-}
-
 function shapeObj(propMappings, obj)
 {
     let res = {};
 
-    for(let i = 0; i < propMappings.length; i++) {
-        let mapping = propMappings[i];
-        let val = getKeyPath(obj, mapping.from);
+    for(let mapping of propMappings) {
+        let val = objectPath.get(obj, mapping.from);
 
-        if(val)
-            setKeyPath(res, mapping.to, val.value);
+        if(val !== undefined)
+            objectPath.set(res, mapping.to, val);
     }
 
     return res;
@@ -105,9 +43,13 @@ function propsCommandHandler(runtimeSettings, config, opts)
         let s = opts.propMappings[i].split('=');
         let from, to;
 
-        if(s.length == 1 && s[0].length > 0)
+        if(s.length == 1 && s[0].length > 0) {
+            // A single property name, no equals sign
+            // No rename, just a copy
             from = to = s[0];
+        }
         else if(s.length == 2 && s[0].length > 0 && s[1].length > 0) {
+            // x=y
             to = s[0];
             from = s[1];
         }

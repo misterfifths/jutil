@@ -55,6 +55,8 @@ $ echo '[ {\
 | ]
 ```
 
+For more details on the types of paths you can use, see the documentation for the [object-path library](https://github.com/mariocasciaro/object-path).
+
 You can rename properties in the output using the syntax `outputKey=inputKey`:
 
 ```sh
@@ -135,4 +137,10 @@ $ echo '[{"x": 1, "y": 3}, {"x": 2}]' | jprops x y
 | [{"x":1,"y":3},{"x":2}]
 ```
 
-Note that attempting to traverse arrays with `jprops` is not recommended. Use the longhand `jselect` to make your intentions clear.
+But falsy values are propagated:
+
+```sh
+$ echo '{"x": false, "y": true}' | jprops x
+| {"x":false}
+```
+
