@@ -9,11 +9,6 @@
 - Actually do something with verbosity (`-v`)
 - More ES6ification: look for use cases for template strings, etc.
 
-## Specific
-
-- Fix weirdo `jprops` keypath syntax and its interaction with arrays.
-- Perhaps standardize on keypaths everywhere that takes a property name, particularly with unwrapping. E.g. for Foursquare categories it would be `-u response.categories`.
-
 ## New commands
 
 - `jfold`: Like [Haskell's `foldr` and friends](https://wiki.haskell.org/Fold) - initial, iterative expression, reducer

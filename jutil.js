@@ -4,6 +4,7 @@
 const vm = require('vm'),
       fs = require('fs'),
       path = require('path'),
+      objectPath = require('object-path'),
       utils = require('./utils.js');
 
 const defaultConfig = {
@@ -118,8 +119,9 @@ const defaultConfig = {
         
         // More than one property. Cross-reference with autoUnwrapProperties
         for(let propName of config.autoUnwrapProperties) {
-            if(obj.hasOwnProperty(propName))
-                return obj[propName];
+            let value = objectPath.get(obj, propName);
+            if(value !== undefined)
+                return value;
         }
         
         // No luck; pass through original object
@@ -194,7 +196,7 @@ function makeRuntimeSettings(commandDesc, config, opts)
         settings.unwrapper = config.autoUnwrapper;
     
     if(opts.unwrapProperty)
-        settings.unwrapper = (config, obj) => obj[opts.unwrapProperty];
+        settings.unwrapper = (config, obj) => objectPath.get(obj, opts.unwrapProperty);
     
     settings.verbose = opts.verbose;
 

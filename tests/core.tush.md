@@ -166,6 +166,22 @@ $ echo '{ "meta": 3, "payload": [1, 2] }' | jutil -u payload
 | [1,2]
 ```
 
+Using the [object-path library](https://github.com/mariocasciaro/object-path), you can traverse objects with `-u`  using dot notation:
+
+```sh
+$ echo '{ \
+    "name": "Yoel", \
+    "address": { \
+      "street": { "line1": "157 Iosefka Pl.", "line2": "Apt. 2" }, \
+      "country": "Laos" \
+    } \
+  }' | jutil -pu address.street
+| {
+|     "line1": "157 Iosefka Pl.",
+|     "line2": "Apt. 2"
+| }
+```
+
 ### Via `autoUnwrapProperties` in config
 
 If you frequently deal with data that needs unwrapping via `-u`, you can specify a prioritized list of property names to try in a configuration file. Assign an array of strings to the `autoUnwrapProperties` key of the `config` object, and each will be tried in order against incoming data when you specify `-a`. [Here](fixtures/unwrap-properties-config)'s an example configuration file.
@@ -194,6 +210,22 @@ Similarly:
 ```sh
 $ echo '{}' | jutil -c unwrap-properties-config -a
 | {}
+```
+
+Dot notation also works in properties specified in the configuration file:
+
+```sh
+$ echo '{ \
+    "name": "Yoel", \
+    "address": { \
+      "street": { "line1": "157 Iosefka Pl.", "line2": "Apt. 2" }, \
+      "country": "Laos" \
+    } \
+  }' | jutil -pac unwrap-with-dot-config
+| {
+|     "line1": "157 Iosefka Pl.",
+|     "line2": "Apt. 2"
+| }
 ```
 
 ### Via `autoUnwrapper` in config
