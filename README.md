@@ -10,25 +10,39 @@ Well, **jutil** is (probably) for you! It runs on [node.js](http://nodejs.org) a
 In its simplest form, jutil accepts JSON-formatted data, provides you an environment to run some JavaScript against it, and prints out the return value of that script. For instance:
 
 ````sh
-$ curl -s http://graph.facebook.com/4 | jutil 'return name'
-"Mark Zuckerberg"
+$ curl -s http://www.pokeapi.co/api/v2/pokemon/1/ | jutil 'return name'
+"bulbasaur"
 ````
 
 Or, if your script returns an object, it is formatted as JSON:
 
 ```sh
-$ curl -s https://api.twitter.com/1/statuses/public_timeline.json | jutil 'return $[0].user'
+$ curl -s http://www.pokeapi.co/api/v2/pokemon/1/ jutil 'return types[0].type'
 {
-    "contributors_enabled": false,
-    "created_at": "Thu Sep 22 18:56:51 +0000 2011",
-    "default_profile": false,
-    "default_profile_image": false,
-    ...
+    "url": "http://www.pokeapi.co/api/v2/type/4/",
+    "name": "poison"
 }
 ```
 
-But of course, there's much more. This is just the simplest of jutil's commands.
+But the real power of jutil comes from chaining together multiple commands. For instance, let's print out the names of all of Bulbasaur's base stats that are greater than 60:
 
+```sh
+$ curl -s http://www.pokeapi.co/api/v2/pokemon/1/ | jwhere -u stats 'base_stat > 60' | jformat '%{stat.name}'
+special-defense
+special-attack
+```
+
+Or a more accurate list of a Pokemon's type:
+
+```sh
+$ curl -s http://www.pokeapi.co/api/v2/pokemon/1/ | jutil 'return types' | jsort slot | jselect type.name
+[
+    "grass",
+    "poison"
+]
+```
+
+But of course, there's much more.
 
 # Commands
 
@@ -36,9 +50,11 @@ Each of these commands can be run in two ways: `jutil <command>` or via an alias
 
 ## jutil
 
-The default behavior, as discussed above, runs a script you provide (which is optional) and prints its result. The script is evaluated in an enviroment where `$` refers to the loaded data (after any [unwrapping](#unwrapping)). It is also, by default, wrapped inside `with($) { ... }`, so that properties from the data can be referenced without qualification. This may be troublesome if the data has property names that hide [helpful globals](#more-on-the-context-in-which-your-scripts-execute). The `--disable-with` or `-W` command-line options disable this feature. For more details on the context in which your script executes, see [this section](#more-on-the-context-in-which-your-scripts-execute).
+The default behavior, as shown above, runs a script you provide and prints its result. The script is evaluated in an enviroment where `$` refers to the loaded data (after any [unwrapping](#unwrapping)). It is also, by default, wrapped inside `with($) { ... }`, so that properties from the data can be referenced without qualification. This may be troublesome if the data has property names that hide [helpful globals](#more-on-the-context-in-which-your-scripts-execute). The `--disable-with` or `-W` command-line options disable this feature. For more details on the context in which your script executes, see [this section](#more-on-the-context-in-which-your-scripts-execute).
 
 You may have noticed the returned JSON in the second sample above is formatted. By default, if jutil's stdout is a terminal, the output will be pretty-printed and sent to your pager if it is larger than your screen. To disable this feature, use the `--disable-smart` or `-S` options.
+
+You can see more basic examples of the default behavior in [the tests](https://github.com/misterfifths/jutil/blob/master/tests/core.tush.md#scripts).
 
 ## jwhere
 
@@ -60,22 +76,21 @@ $ echo '[ {"x": 1, "y": 2}, {"x": 2, "y": 3}, {"x": 3, "y": 6} ]' | jwhere 'x + 
 ]
 ````
 
-Find people using Twitter to its fullest:
+Find the visible moves of Voltorb:
 
 ````sh
-$ curl -s https://api.twitter.com/1/statuses/public_timeline.json | jwhere 'text.length == 140'
+$ curl -s http://www.pokeapi.co/api/v2/pokemon/100/ | jutil 'return abilities' | jwhere '!is_hidden'
 [
     {
-        "contributors": null,
-        "coordinates": null,
+        "is_hidden": false,
         ...
-        "text": "How bout baby we make a promise to not promise anything more than 1 night, complicated situations only get worse in the morning light #LadyA"
-        ...
+        "name": "static"
     },
     {
+        "is_hidden": false,
         ...
+        "name": "soundproof"
     },
-    ...
 ]
 ````
 
@@ -162,15 +177,15 @@ This tool is intended to streamline the most common use for `jselect`, selecting
 So, for example, to collect only the usernames and tweets from the timeline:
 
 ````sh
-$ curl -s https://api.twitter.com/1/statuses/public_timeline.json | jprops text user=user.screen_name
+$ curl -s http://www.pokeapi.co/api/v2/pokemon/1 | jutil 'return stats' | jprops name=stat.name base_stat
 [
     {
-        "text": "The eduMOOC News is out! http://t.co/MamJoAuZ ▸ Top stories today via @jupidu @jankenb2",
-        "user": "myweb2learn"
+        "name": "speed",
+        "base_stat": 45
     },
     {
-        "text": "#ipadtweet",
-        "user": "The_DanSullivan"
+        "name": "special-defense",
+        "base_stat": 65
     },
     ...
 ]
@@ -184,13 +199,18 @@ This one is kind of like `jselect`, but instead of returning an object for each 
 
 Here, have an example:
 
-````sh
-$ curl -s https://api.twitter.com/1/statuses/public_timeline.json |
-  jformat "%{user.name}: %{user.statuses_count} tweets, follower/friend ratio: %{(user.followers_count / user.friends_count).toFixed(2)}"
-PrettyMotherfucka♥: 45716 tweets, follower/friend ratio: 1.33
-L O A D I N G....OH!: 15045 tweets, follower/friend ratio: 1.18
-...
-````
+```sh
+$ curl -s http://www.pokeapi.co/api/v2/pokemon/1 |
+    jutil 'return stats' |
+    jsort stat.name |
+    jformat '%{stat.name.split("-").join(" ").padEnd(20)} %base_stat'
+attack               49
+defense              49
+hp                   45
+special attack       65
+special defense      65
+speed                45
+```
 
 ## jjoin
 
@@ -265,11 +285,11 @@ $ curl -s https://api.github.com/gists |
    1 PHP
 ````
 
-Shit [aparrish](https://github.com/aparrish)'s [@everyword](https://twitter.com/everyword) says:
+Say the [names of all the Pokemon](https://soundcloud.com/tim-clem-404086192/all-pokemon):
 
 ````sh
-$ curl -s http://api.twitter.com/1/statuses/user_timeline.json?screen_name=everyword |
-  jformat -n '%text, ' |
+$ curl -s ttp://www.pokeapi.co/api/v2/pokedex/1/ |
+  jformat -u pokemon_entries -n '%{pokemon_species.name}, ' |
   say -v Alex -f -
 ````
 
