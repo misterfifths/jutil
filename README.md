@@ -176,7 +176,7 @@ $ curl -s https://api.twitter.com/1/statuses/public_timeline.json | jprops text 
 ]
 ````
 
-Things get a little funky if you try to traverse into an array with one of your mappings. It 'works' right now, for some definition of work, but I'd recommend staying away for the time being.
+Check out the examples for the [object-path](https://github.com/mariocasciaro/object-path) library to see what other types of property paths are supported.
 
 ## jformat
 
