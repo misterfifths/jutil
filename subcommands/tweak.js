@@ -1,7 +1,6 @@
 'use strict';
 
-const fs = require('fs'),
-      processors = require('../processors.js');
+const processors = require('../processors.js');
 
 module.exports = {
     help: 'Run a script against the objects in the loaded data, outputting its results.',
