@@ -4,7 +4,7 @@ const utils = require('../utils.js'),
       processors = require('../processors.js');
 
 module.exports = {
-    help: 'Run a script against the loaded data, outputting its return value.',
+    help: 'Run Javascript against the incoming JSON data, outputting its return value.',
     usageString: '[script]',
     maxPositionalArguments: 1,
     options: [

@@ -233,8 +233,8 @@ function assembleCommandOptions(commandDesc)
 function showHelp(subcommand, commandDesc, parser)
 {
     let width = process.stdout.isTTY ? process.stdout.getWindowSize()[0] : 80,
-        optionsHelp = parser.help({ maxCol: width }),
-        helpString = 'Usage: jutil ' + subcommand + ' [options] ' + commandDesc.usageString + '\n\n' + commandDesc.help + '\n\nOptions:\n' + optionsHelp;
+        optionsHelp = parser.help({ maxCol: width, indent: 2, headingIndent: 0 }),
+        helpString = 'Usage: jutil ' + subcommand + ' [options] ' + commandDesc.usageString + '\n\n' + commandDesc.help + '\n\n' + optionsHelp;
     
     process.stderr.write(helpString);
 }

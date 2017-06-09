@@ -3,7 +3,7 @@
 const processors = require('../processors.js');
 
 module.exports = {
-    help: 'Iterate over the input, returning only objects that match the given predicate.',
+    help: 'Iterate over the JSON input, returning only objects that match the given Javascript predicate.',
     usage: '<predicate>',
     minPositionalArguments: 1,
     maxPositionalArguments: 1,

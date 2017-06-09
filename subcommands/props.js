@@ -3,7 +3,7 @@
 const objectPath = require('object-path');
 
 module.exports = {
-    help: 'Iterate over the input, returning only the given properties of each object. Mappings are of the form [[key.]*key=][key.]*key, to follow subobjects and optionally rename them in the output.',
+    help: 'Iterate over the input JSON, returning only the given properties of each object. Mappings are of the form [[key.]*key=][key.]*key, to follow subobjects and optionally rename them in the output.',
     usageString: '<mapping...>',
     minPositionalArguments: 1,
     outputsObject: true,

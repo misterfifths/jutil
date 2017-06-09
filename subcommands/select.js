@@ -3,7 +3,7 @@
 const processors = require('../processors.js');
 
 module.exports = {
-    help: 'Iterate over the input, accumulating the result of the given expression for each object.',
+    help: 'Iterate over the input JSON, accumulating the result of the given Javascript expression for each object.',
     usageString: '<expression>',
     minPositionalArguments: 1,
     maxPositionalArguments: 1,

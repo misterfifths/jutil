@@ -3,7 +3,7 @@
 const processors = require('../processors.js');
 
 module.exports = {
-    help: 'Iterate over the input, counting the objects that match the given predicate. If predicate is omitted, all objects are counted.',
+    help: 'Iterate over the JSON input, counting the objects that match the given Javascript predicate. If predicate is omitted, all objects are counted.',
     usageString: '[predicate]',
     maxPositionalArguments: 1,
     outputsObject: false,

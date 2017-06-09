@@ -1,7 +1,7 @@
 'use strict';
 
 module.exports = {
-    help: 'Return a given number of objects from the input. If the input has fewer objects than the given number, all of the input is returned.',
+    help: 'Return a given number of objects from the JSON input. If the input has fewer objects than the given number, all of the input is returned.',
     usageString: '<count>',
     minPositionalArguments: 1,
     maxPositionalArguments: 1,

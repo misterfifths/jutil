@@ -3,7 +3,7 @@
 const utils = require('../utils.js');
 
 module.exports = {
-    help: 'Joins input files together. Arrays will be joined together, and objects will be added to an array.',
+    help: 'Joins JSON files together. Arrays will be concatenated, and objects will be added to an array.',
     usageString: '<file...>',
     minPositionalArguments: 1,
     hasFileOption: false,

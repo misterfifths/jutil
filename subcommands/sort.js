@@ -3,7 +3,7 @@
 const processors = require('../processors.js');
 
 module.exports = {
-    help: 'Sort the objects in the input by a given key expression. If key is omitted, defaults to the object itself.',
+    help: 'Sort the objects in the JSON input by a given key expression. If key is omitted, defaults to the object itself.',
     usageString: '[key-expression]',
     maxPositionalArguments: 1,
     options: [

@@ -3,7 +3,7 @@
 const processors = require('../processors.js');
 
 module.exports = {
-    help: 'Iterate over the input, printing the result of the given format string for each object. Tokens are of the form %property or %{expression}.',
+    help: 'Iterate over the JSON input, printing the result of the given format string for each object. Tokens are of the form %property or %{expression}.',
     usageString: '<format>',
     minPositionalArguments: 1,
     maxPositionalArguments: 1,
