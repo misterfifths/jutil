@@ -156,7 +156,7 @@ cmdline.parseCommandLine({
 
 function runCommand(commandDesc, opts)
 {
-    let config = loadConfig(defaultConfig, opts.config_file),
+    let config = loadConfig(defaultConfig, opts.no_config_file ? undefined : opts.config_file),
         runtimeSettings = makeRuntimeSettings(commandDesc, config, opts),
         res = commandDesc.handler(runtimeSettings, config, opts);
 
@@ -179,12 +179,14 @@ function makeRuntimeSettings(commandDesc, config, opts)
     }
 
     if(commandDesc.outputsObject) {
-        if(opts.pretty_print || config.alwaysPrettyPrint || settings.smartOutput)
+        if(opts.no_pretty_print)
+            settings.outputFormatter = config.unprettyPrinter;
+        else if(opts.pretty_print || config.alwaysPrettyPrint || settings.smartOutput)
             settings.outputFormatter = config.prettyPrinter;
         else
             settings.outputFormatter = config.unprettyPrinter;
     
-        if(opts.sort_keys === false) {} // --no-sort-keys
+        if(opts.no_sort_keys) { }
         else if(opts.sort_keys || config.alwaysSortKeys) settings.sortKeys = true;
     }
     
@@ -193,7 +195,7 @@ function makeRuntimeSettings(commandDesc, config, opts)
         else settings.withClause = opts.disable_with === false || !config.disableWithClause;
     }
     
-    if(opts.auto_unwrap === false) { }  // --no-auto-unwrap
+    if(opts.no_auto_unwrap) { }
     else if(opts.auto_unwrap || config.alwaysAutoUnwrap)
         settings.unwrapper = config.autoUnwrapper;
     
@@ -216,7 +218,7 @@ function makeRuntimeSettings(commandDesc, config, opts)
     // Find modules and load them into a sandbox if the command needs it,
     // and throw the data in there too as $$
     if(commandDesc.needsSandbox) {
-        if(opts.module_dir && opts.module_dir[0] === false) // nomnom turns --no-<list option> into [false]
+        if(opts.no_module_dir)
             settings.modulePaths = [];
         else if(opts.module_dir) {
             let dirs = opts.module_dir;

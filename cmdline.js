@@ -16,14 +16,24 @@ const globalOpts = [
     {
         names: ['auto-unwrap', 'a'],
         type: 'bool',
-        help: 'Attempt to intelligently extract a useful property of the loaded data to run against.'
+        help: 'Attempt to intelligently extract a useful property of the loaded data to run against. Specify --no-auto-unwrap to turn off auto-unwrapping even if it is enabled in your config file.'
+    },
+    {
+        name: 'no-auto-unwrap',
+        hidden: true,
+        type: 'bool'
     },
     {
         names: ['config-file', 'c'],
         helpArg: 'FILE',
-        help: 'Load the given config file. The default is the JUTIL_CONFIG_PATH environmental variable or ~/.jutil/config.',
+        help: 'Load the given config file. The default is the JUTIL_CONFIG_PATH environmental variable or ~/.jutil/config. Specify --no-config-file to use the default configuration.',
         type: 'string',
         'default': process.env.JUTIL_CONFIG_PATH || '~/.jutil/config'
+    },
+    {
+        name: 'no-config-file',
+        hidden: true,
+        type: 'bool'
     },
     {
         names: ['verbose', 'v'],
@@ -50,12 +60,22 @@ const objectOutputOpts = [
     {
         names: ['pretty-print', 'p'],
         type: 'bool',
-        help: 'Pretty-print the output.'
+        help: 'Pretty-print the output. Specify --no-pretty-print or -P to disable pretty printing even if it is enabled by your config file or smart output.'
+    },
+    {
+        names: ["no-pretty-print", "P"],
+        hidden: true,
+        type: 'bool'
     },
     {
         names: ['sort-keys', 's'],
         type: 'bool',
-        help: 'Sort keys in the output.'
+        help: 'Sort keys in the output. Specify --no-sort-keys to disable key sorting even if it is enabled in your config file.'
+    },
+    {
+        name: 'no-sort-keys',
+        hidden: true,
+        type: 'bool'
     }
 ];
 
@@ -72,7 +92,12 @@ const sandboxOpts = [
         names: ['module-dir', 'M'],
         helpArg: 'DIR',
         type: 'arrayOfString',
-        help: 'Add the given directory as a module path. Any .js files in the directory will be loaded before executing.'
+        help: 'Add the given directory as a module path. Any .js files in the directory will be loaded before executing. Specify --no-module-dir to disable directory loading even if it is enabled in your config file.'
+    },
+    {
+        name: 'no-module-dir',
+        hidden: true,
+        type: 'bool'
     },
     {
         names: ['module', 'm'],
