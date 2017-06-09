@@ -30,6 +30,9 @@ $ echo '[1,2,3]' | jformat -n '\t%{$}\n'
 | 	1
 | 	2
 | 	3
+
+$ echo '[1,2]' | jformat -n '%{$}\r' | tr '\r' '!'
+| 1!2!
 ```
 
 If you need to print a header before your custom output, use the `-H` option. In the format string for `-H`, `$` refers to the entire data. For example, here's a naive table:
