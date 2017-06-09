@@ -14,7 +14,17 @@ $ jcat array_*.json | jsort
 | [1,1,2,2,3,3,4,4,5,5]
 ```
 
-Objects are added to an array:
+Objects are treated slightly differently. If only one input file is provided, the object in it is passed through unchanged:
+
+```sh
+$ jcat -p person-1.json
+| {
+|     "name": "Joan",
+|     "age": 27
+| }
+```
+
+However, if multiple input files are provided, the objects in each are added to an array:
 
 ```sh
 $ jcat -p person-1.json person-2.json

@@ -15,6 +15,11 @@ module.exports = {
 
 function catCommandHandler(runtimeSettings, config, opts)
 {
+    if(opts._args.length == 1) {
+        // Special case: single files are passed through unchanged, regardless of their content
+        return utils.loadJSON(opts._args[0], runtimeSettings, config);
+    }
+
     let res = [];
 
     for(let inputFile of opts._args) {

@@ -214,7 +214,7 @@ speed                45
 
 ## jcat
 
-This tool concatenates the objects in multiple JSON files. If given arrays, they are all concatenated. If given objects, they are placed in an array. For example, assume we have a few files: `array_1-3.json` and `array_3-5.json` that contain array of their titular numbers. Then:
+This tool concatenates the objects in multiple JSON files. If given arrays, they are all concatenated. For example, assume we have a few files: `array_1-3.json` and `array_3-5.json` that contain array of their titular numbers. Then:
 
 ```sh
 $ jcat array_1-3.json array_3-5.json
@@ -227,7 +227,7 @@ $ jcat array_1-3.json array_3-5.json
 ]
 ```
 
-Or, if the files contain objects, they are all placed in an array:
+Objects are treated slightly differently. Or, if multiple files are passed, they are all placed in an array:
 
 ```sh
 $ echo '{ "a": 1 }' > first.json
@@ -246,6 +246,16 @@ $ jcat first.json second.json third.json
         "b": 1
     }
 ]
+```
+
+But if only one file is specified, the object in it is passed through unchanged:
+
+```sh
+$ echo '{ "a": 1 }' > first.json
+$ jcat first.json
+{
+    "a": 1
+}
 ```
 
 ## jtweak
