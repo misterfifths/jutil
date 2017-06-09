@@ -35,6 +35,13 @@ $ echo '[1,2]' | jformat -n '%{$}\r' | tr '\r' '!'
 | 1!2!
 ```
 
+But not if they're escaped:
+
+```sh
+$ echo '[1,2]' | jformat -n '\\t%{$}\\r\\n'
+| \t1\r\n\t2\r\n
+```
+
 If you need to print a header before your custom output, use the `-H` option. In the format string for `-H`, `$` refers to the entire data. For example, here's a naive table:
 
 ```sh

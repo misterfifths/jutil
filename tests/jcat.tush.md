@@ -55,3 +55,10 @@ $ jcat -p array_1-3.json person-1.json
 | ]
 ```
 
+It is an error to specify a nonexistent file:
+
+```sh
+$ jcat nonexistent.json
+@ Error: Unable to load file "nonexistent.json": Error: ENOENT: no such file or directory, open 'nonexistent.json'
+? 1
+```

@@ -297,6 +297,14 @@ $ echo '{}' | jutil -i simple-script 'return [1]'
 ? 1
 ```
 
+It is an error to specify a file that does not exist with `-i`:
+
+```sh
+$ echo '{}' | jutil -i nonexistent-script
+@ Error: Unable to load file "$(pwd)/nonexistent-script": Error: ENOENT: no such file or directory, open '$(pwd)/nonexistent-script'
+? 1
+```
+
 Script errors are reported on the command line:
 
 ```sh
@@ -341,7 +349,7 @@ $ echo '{ "convenient": [1, 2] }' | jutil 'return convenient'
 
 Sometimes, if your data has a property that has a conflicting name with some other function or variable, this functionality may be undesirable. You can disable the `with` statement using the `-W` option:
 
-```
+```sh
 $ echo '{ "convenient": [1, 2] }' | jutil -W 'return convenient'
 @ Error running script: ReferenceError: convenient is not defined
 ? 1
