@@ -24,7 +24,7 @@
         "jprops": "./jutil.js",
         "jformat": "./jutil.js",
         "jsort": "./jutil.js",
-        "jjoin": "./jutil.js",
+        "jcat": "./jutil.js",
         "jtake": "./jutil.js",
         "jdrop": "./jutil.js",
         "jtweak": "./jutil.js"

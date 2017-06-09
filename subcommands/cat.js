@@ -10,10 +10,10 @@ module.exports = {
     outputsObject: true,
     needsSandbox: false,
     hasWithClauseOpt: false,
-    handler: joinCommandHandler
+    handler: catCommandHandler
 };
 
-function joinCommandHandler(runtimeSettings, config, opts)
+function catCommandHandler(runtimeSettings, config, opts)
 {
     let res = [];
 

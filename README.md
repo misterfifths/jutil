@@ -212,12 +212,12 @@ special defense      65
 speed                45
 ```
 
-## jjoin
+## jcat
 
-This tool joins together the objects in multiple JSON files. If given arrays, they are all concatenated. If given objects, they are placed in an array. For example, assume we have a few files: `array_1-3.json` and `array_3-5.json` that contain array of their titular numbers. Then:
+This tool concatenates the objects in multiple JSON files. If given arrays, they are all concatenated. If given objects, they are placed in an array. For example, assume we have a few files: `array_1-3.json` and `array_3-5.json` that contain array of their titular numbers. Then:
 
 ```sh
-$ jjoin array_1-3.json array_3-5.json
+$ jcat array_1-3.json array_3-5.json
 [
     1,
     2,
@@ -233,7 +233,7 @@ Or, if the files contain objects, they are all placed in an array:
 $ echo '{ "a": 1 }' > first.json
 $ echo '{ "a": 2 }' > second.json
 $ echo '{ "a": 3, "b": 1 }' > third.json
-$ jjoin first.json second.json third.json
+$ jcat first.json second.json third.json
 [
     {
         "a": 1
