@@ -11,32 +11,28 @@ $ echo '[1]' | jutil
 $ echo '[1]' | jutil 'return $'
 | [1]
 
-$ set -o pipefail; echo '[1]' | jutil 'return $' 'nonsense' 2>&1 | head -n1 1>&2
+$ echo '[1]' | jutil 'return $' 'nonsense' 2>&1 | head -n1 1>&2
 @ Error: Expected at most 1 argument(s), but got 2
-? 1
 ```
 
 Tools like `jselect` should require exactly one argument:
 
 ```sh
-$ set -o pipefail; echo '[1]' | jselect 2>&1 | head -n1 1>&2
+$ echo '[1]' | jselect 2>&1 | head -n1 1>&2
 @ Error: Expected at least 1 argument(s), but got 0
-? 1
 
 $ echo '[1]' | jselect '{value: $}'
 | [{"value":1}]
 
-$ set -o pipefail; echo '[1]' | jselect '{value: $}' 'nonsense' 2>&1 | head -n1 1>&2
+$ echo '[1]' | jselect '{value: $}' 'nonsense' 2>&1 | head -n1 1>&2
 @ Error: Expected at most 1 argument(s), but got 2
-? 1
 ```
 
 `jprops` should require at least one argument, but accept an unlimited number:
 
 ```sh
-$ set -o pipefail; echo '{"x": 2}' | jprops 2>&1 | head -n1 1>&2
+$ echo '{"x": 2}' | jprops 2>&1 | head -n1 1>&2
 @ Error: Expected at least 1 argument(s), but got 0
-? 1
 
 $ echo '{"x": 2}' | jprops x
 | {"x":2}
