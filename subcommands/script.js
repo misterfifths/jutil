@@ -1,7 +1,6 @@
 'use strict';
 
-const fs = require('fs'),
-      utils = require('../utils.js'),
+const utils = require('../utils.js'),
       processors = require('../processors.js');
 
 module.exports = {

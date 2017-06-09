@@ -1,7 +1,6 @@
 'use strict';
 
-const objectPath = require('object-path'),
-      processors = require('../processors.js');
+const objectPath = require('object-path');
 
 module.exports = {
     help: 'Iterate over the input, returning only the given properties of each object. Mappings are of the form [[key.]*key=][key.]*key, to follow subobjects and optionally rename them in the output.',
@@ -29,8 +28,7 @@ function shapeObj(propMappings, obj)
 
 function propsCommandHandler(runtimeSettings, config, opts)
 {
-    let res = [],
-        data = runtimeSettings.data,
+    let data = runtimeSettings.data,
         propMappings = [];
 
     for(let propMapping of opts._args) {

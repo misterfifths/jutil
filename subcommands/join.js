@@ -1,7 +1,6 @@
 'use strict';
 
-const fs = require('fs'),
-      utils = require('../utils.js');
+const utils = require('../utils.js');
 
 module.exports = {
     help: 'Joins input files together. Arrays will be joined together, and objects will be added to an array.',
