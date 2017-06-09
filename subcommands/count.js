@@ -3,13 +3,9 @@
 const processors = require('../processors.js');
 
 module.exports = {
-    help: 'Iterate over the input, counting the objects that match the given predicate.',
-    options: {
-        predicate: {
-            position: 1,
-            help: 'Predicate to evaluate for each object in the loaded data. If omitted, all objects will be counted.'
-        }
-    },
+    help: 'Iterate over the input, counting the objects that match the given predicate. If predicate is omitted, all objects are counted.',
+    usageString: '[predicate]',
+    maxPositionalArguments: 1,
     outputsObject: false,
     needsSandbox: true,
     hasWithClauseOpt: true,
@@ -20,13 +16,13 @@ function countCommandHandler(runtimeSettings, config, opts)
 {
     let res = 0;
     
-    if(!opts.predicate) {
+    if(opts._args.length === 0) {
         // Short-circuit the no-predicate case
         if(Array.isArray(runtimeSettings.data)) res = runtimeSettings.data.length;
         else res = 1;  // kind of nonsense, but keeping for backwards compatibility
     }
     else {
-        processors.runPredicate(runtimeSettings, opts, match => {
+        processors.runPredicate(opts._args[0], runtimeSettings, match => {
             res++;
             return true;
         });

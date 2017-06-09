@@ -4,13 +4,9 @@ const processors = require('../processors.js');
 
 module.exports = {
     help: 'Run a script against the objects in the loaded data, outputting its results.',
-    options: {
-        script: {
-            position: 1,
-            help: 'Script to run against the objects in the loaded data.',
-            required: true
-        }
-    },
+    usageString: '<script>',
+    minPositionalArguments: 1,
+    maxPositionalArguments: 1,
     outputsObject: true,
     needsSandbox: true,
     hasWithClauseOpt: true,
@@ -20,7 +16,7 @@ module.exports = {
 function tweakCommandHandler(runtimeSettings, config, opts)
 {
     let res = [],
-        scriptWithReturn = opts.script + '; return $';
+        scriptWithReturn = opts._args[0] + '; return $';
 
     processors.mapOverInput(scriptWithReturn, runtimeSettings, (raw, ret) => {
         res.push(ret);

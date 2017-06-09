@@ -4,15 +4,9 @@ const fs = require('fs'),
       utils = require('../utils.js');
 
 module.exports = {
-    help: 'Joins input files together.',
-    options: {
-        files: {
-            position: 1,
-            list: true,
-            required: true,
-            help: 'JSON files to join together. Arrays will be joined together, and objects will be added to an array. (At least one is required)'
-        }
-    },
+    help: 'Joins input files together. Arrays will be joined together, and objects will be added to an array.',
+    usageString: '<file...>',
+    minPositionalArguments: 1,
     hasFileOption: false,
     outputsObject: true,
     needsSandbox: false,
@@ -24,7 +18,7 @@ function joinCommandHandler(runtimeSettings, config, opts)
 {
     let res = [];
 
-    for(let inputFile of opts.files) {
+    for(let inputFile of opts._args) {
         const data = utils.loadJSON(inputFile, runtimeSettings, config);
 
         if(Array.isArray(data))

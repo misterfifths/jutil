@@ -30,13 +30,12 @@
         "jtweak": "./jutil.js"
     },
     "dependencies": {
-        "nomnom": "1.5.x",
-        "object-path": "^0.11.4",
-        "wordwrap": ">=0.0.2"
+        "dashdash": "^1.14.1",
+        "object-path": "^0.11.4"
     },
     "devDependencies": {
         "coveralls": "^2.13.1",
-        "jshint": ">=0.5.5",
+        "jshint": "^2.9.4",
         "nyc": "^11.0.2"
     },
     "engines": {
@@ -44,6 +43,7 @@
     },
     "scripts": {
         "test": "nyc tests/run_tests",
-        "coverage": "nyc report --reporter=text-lcov | coveralls"
+        "coverage": "nyc report --reporter=text-lcov | coveralls",
+        "lint": "./run_jshint"
     }
 }

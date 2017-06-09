@@ -137,18 +137,18 @@ if(require.main != module) {
 }
 
 cmdline.parseCommandLine({
-    script: require('./subcommands/script.js'),
-    where: require('./subcommands/where.js'),
-    first: require('./subcommands/first.js'),
-    count: require('./subcommands/count.js'),
-    select: require('./subcommands/select.js'),
-    props: require('./subcommands/props.js'),
-    format: require('./subcommands/format.js'),
-    sort: require('./subcommands/sort.js'),
-    join: require('./subcommands/join.js'),
-    take: require('./subcommands/take.js'),
-    drop: require('./subcommands/drop.js'),
-    tweak: require('./subcommands/tweak.js')
+    script: () => require('./subcommands/script.js'),
+    where: () => require('./subcommands/where.js'),
+    first: () => require('./subcommands/first.js'),
+    count: () => require('./subcommands/count.js'),
+    select: () => require('./subcommands/select.js'),
+    props: () => require('./subcommands/props.js'),
+    format: () => require('./subcommands/format.js'),
+    sort: () => require('./subcommands/sort.js'),
+    join: () => require('./subcommands/join.js'),
+    take: () => require('./subcommands/take.js'),
+    drop: () => require('./subcommands/drop.js'),
+    tweak: () => require('./subcommands/tweak.js')
 }, runCommand);
 
 
@@ -156,7 +156,7 @@ cmdline.parseCommandLine({
 
 function runCommand(commandDesc, opts)
 {
-    let config = loadConfig(defaultConfig, opts.configPath),
+    let config = loadConfig(defaultConfig, opts.config_file),
         runtimeSettings = makeRuntimeSettings(commandDesc, config, opts),
         res = commandDesc.handler(runtimeSettings, config, opts);
 
@@ -174,31 +174,31 @@ function makeRuntimeSettings(commandDesc, config, opts)
     let settings = {};
     
     if(commandDesc.hasSmartOutput) {
-        if(opts.disableSmartOutput || !process.stdout.isTTY) settings.smartOutput = false;
-        else settings.smartOutput = opts.disableSmartOutput === false || !config.disableSmartOutput;
+        if(opts.disable_smart || !process.stdout.isTTY) settings.smartOutput = false;
+        else settings.smartOutput = opts.disable_smart === false || !config.disableSmartOutput;
     }
 
     if(commandDesc.outputsObject) {
-        if(opts.prettyPrint || config.alwaysPrettyPrint || settings.smartOutput)
+        if(opts.pretty_print || config.alwaysPrettyPrint || settings.smartOutput)
             settings.outputFormatter = config.prettyPrinter;
         else
             settings.outputFormatter = config.unprettyPrinter;
     
-        if(opts.sortKeys === false) {} // --no-sort-keys
-        else if(opts.sortKeys || config.alwaysSortKeys) settings.sortKeys = true;
+        if(opts.sort_keys === false) {} // --no-sort-keys
+        else if(opts.sort_keys || config.alwaysSortKeys) settings.sortKeys = true;
     }
     
     if(commandDesc.hasWithClauseOpt) {
-        if(opts.disableWithClause) settings.withClause = false;
-        else settings.withClause = opts.disableWithClause === false || !config.disableWithClause;
+        if(opts.disable_with) settings.withClause = false;
+        else settings.withClause = opts.disable_with === false || !config.disableWithClause;
     }
     
-    if(opts.autoUnwrap === false) { }  // --no-auto-unwrap
-    else if(opts.autoUnwrap || config.alwaysAutoUnwrap)
+    if(opts.auto_unwrap === false) { }  // --no-auto-unwrap
+    else if(opts.auto_unwrap || config.alwaysAutoUnwrap)
         settings.unwrapper = config.autoUnwrapper;
     
-    if(opts.unwrapProperty)
-        settings.unwrapper = (config, obj) => objectPath.get(obj, opts.unwrapProperty);
+    if(opts.unwrap_prop)
+        settings.unwrapper = (config, obj) => objectPath.get(obj, opts.unwrap_prop);
     
     settings.verbose = opts.verbose;
 
@@ -216,18 +216,18 @@ function makeRuntimeSettings(commandDesc, config, opts)
     // Find modules and load them into a sandbox if the command needs it,
     // and throw the data in there too as $$
     if(commandDesc.needsSandbox) {
-        if(opts.moduleDirectories && opts.moduleDirectories[0] === false) // nomnom turns --no-<list option> into [false]
+        if(opts.module_dir && opts.module_dir[0] === false) // nomnom turns --no-<list option> into [false]
             settings.modulePaths = [];
-        else if(opts.moduleDirectories) {
-            let dirs = opts.moduleDirectories;
+        else if(opts.module_dir) {
+            let dirs = opts.module_dir;
             dirs.push.apply(dirs, config.moduleDirectories);
             settings.modulePaths = findModules(dirs);
         }
         else
             settings.modulePaths = findModules(config.moduleDirectories);
         
-        if(opts.modulePaths && opts.modulePaths[0] !== false)
-            settings.modulePaths.push.apply(settings.modulePaths, opts.modulePaths);
+        if(opts.module && opts.module[0] !== false)
+            settings.modulePaths.push.apply(settings.modulePaths, opts.module);
     
         settings.sandbox = vm.createContext({
             $config: config,

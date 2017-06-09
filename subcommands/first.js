@@ -3,13 +3,9 @@
 const processors = require('../processors.js');
 
 module.exports = {
-    help: 'Iterate over the input, returning the first object that matches the given predicate.',
-    options: {
-        predicate: {
-            position: 1,
-            help: 'Predicate to evaluate for each object in the loaded data. If omitted, the first object from the input will be returned.'
-        }
-    },
+    help: 'Iterate over the input, returning the first object that matches the given predicate. If predicate is omitted, the first object from the input is returned.',
+    usageString: '[predicate]',
+    maxPositionalArguments: 1,
     outputsObject: true,
     needsSandbox: true,
     hasWithClauseOpt: true,
@@ -18,12 +14,18 @@ module.exports = {
 
 function firstCommandHandler(runtimeSettings, config, opts)
 {
-    let res;
+    let res,
+        predicate;
 
-    if(!opts.predicate)
-        opts.predicate = 'true';
-    
-    processors.runPredicate(runtimeSettings, opts, match => {
+    if(opts._args.length === 0) {
+        // TODO: short-circuite this case
+        predicate = 'true';
+    }
+    else {
+        predicate = opts._args[0];
+    }
+
+    processors.runPredicate(predicate, runtimeSettings, match => {
         res = match;
         return false;
     });

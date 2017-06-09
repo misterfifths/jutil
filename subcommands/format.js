@@ -3,32 +3,29 @@
 const processors = require('../processors.js');
 
 module.exports = {
-    help: 'Iterate over the input, printing the result of the given format string for each object.',
-    options: {
-        format: {
-            position: 1,
-            required: true,
-            help: 'The format string to use. Tokens are of the form %property or %{expression}. (Required)'
-        },
-        header: {
-            abbr: 'H',
-            metavar: 'FORMAT',
+    help: 'Iterate over the input, printing the result of the given format string for each object. Tokens are of the form %property or %{expression}.',
+    usageString: '<format>',
+    minPositionalArguments: 1,
+    maxPositionalArguments: 1,
+    options: [
+        {
+            names: ['header', 'H'],
+            helpArg: 'FORMAT',
             help: 'A header to print before the main output; same token syntax as the format string and is evaluated against the data as a whole.',
             type: 'string'
         },
-        footer: {
-            abbr: 'F',
-            metavar: 'FORMAT',
+        {
+            names: ['footer', 'F'],
+            helpArg: 'FORMAT',
             help: 'A footer to print after the main output; same token syntax as the format string and is evaluated against the data as a whole.',
             type: 'string'
         },
-        noNewline: {
-            abbr: 'n',
-            full: 'no-newline',
-            flag: true,
+        {
+            names: ['no-newline', 'n'],
+            type: 'bool',
             help: 'Do not print trailing newline characters after every line.'
         }
-    },
+    ],
     outputsObject: false,
     hasSmartOutput: true,  // format doesn't spit out JSON, but we do want its output to be subject to autopaging
     needsSandbox: true,
@@ -68,11 +65,11 @@ function formatCommandHandler(runtimeSettings, config, opts)
     unbracketed: /%([\w$]+)/
     */
 
-    let format = opts.format,
+    let format = opts._args[0],
         re = /%([\w%]+)|%\{(?=[^}]*\})([^}]*)\}/gm,
         data = runtimeSettings.sandbox.$$,
         preparedFormatString,
-        newline = opts.noNewline ? '' : '\n',
+        newline = opts.no_newline ? '' : '\n',
         res = '';
     
     if(opts.header) {

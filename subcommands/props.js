@@ -4,15 +4,9 @@ const objectPath = require('object-path'),
       processors = require('../processors.js');
 
 module.exports = {
-    help: 'Iterate over the input, returning only the given properties of each object.',
-    options: {
-        propMappings: {
-            position: 1,
-            list: true,
-            required: true,
-            help: 'Names of properties to extract from each object in the loaded data. These are of the form [[key.]*key=][key.]*key, to follow subobjects and optionally rename them in the output. (At least one is required)'
-        }
-    },
+    help: 'Iterate over the input, returning only the given properties of each object. Mappings are of the form [[key.]*key=][key.]*key, to follow subobjects and optionally rename them in the output.',
+    usageString: '<mapping...>',
+    minPositionalArguments: 1,
     outputsObject: true,
     needsSandbox: false,
     hasWithClauseOpt: false,
@@ -39,8 +33,8 @@ function propsCommandHandler(runtimeSettings, config, opts)
         data = runtimeSettings.data,
         propMappings = [];
 
-    for(let i = 0; i < opts.propMappings.length; i++) {
-        let s = opts.propMappings[i].split('=');
+    for(let propMapping of opts._args) {
+        let s = propMapping.split('=');
         let from, to;
 
         if(s.length == 1 && s[0].length > 0) {
@@ -54,7 +48,7 @@ function propsCommandHandler(runtimeSettings, config, opts)
             from = s[1];
         }
         else {
-            console.error('Invalid property mapping: ' + opts.propMappings[i]);
+            console.error('Invalid property mapping: ' + propMapping);
             process.exit(1);
         }
 

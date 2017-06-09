@@ -1,181 +1,220 @@
 'use strict';
 
 const path = require('path'),
-      utils = require('./utils.js');
+      dashdash = require('dashdash');
 
 module.exports = { parseCommandLine };
 
-const globalOpts = {
-    unwrapProperty: {
+const globalOpts = [
+    {
+        names: ['unwrap-prop', 'u'],
         abbr: 'u',
-        metavar: 'KEY',
-        full: 'unwrap-prop',
+        helpArg: 'KEY',
         type: 'string',
         help: 'Operate only against the given property of the loaded data.'
     },
-    autoUnwrap: {
-        abbr: 'a',
-        full: 'auto-unwrap',
-        flag: true,
+    {
+        names: ['auto-unwrap', 'a'],
+        type: 'bool',
         help: 'Attempt to intelligently extract a useful property of the loaded data to run against.'
     },
-    configPath: {
-        abbr: 'c',
-        full: 'config',
-        metavar: 'FILE',
-        help: 'Load the given config file. The default is the JUTIL_CONFIG_PATH environmental variable or ~/.jutil/config; specify --no-config to use the default configuration.',
+    {
+        names: ['config-file', 'c'],
+        helpArg: 'FILE',
+        help: 'Load the given config file. The default is the JUTIL_CONFIG_PATH environmental variable or ~/.jutil/config.',
         type: 'string',
         'default': process.env.JUTIL_CONFIG_PATH || '~/.jutil/config'
     },
-    verbose: {
-        abbr: 'v',
-        flag: true,
+    {
+        names: ['verbose', 'v'],
+        type: 'bool',
         help: 'Be verbose about things (e.g. module loading).'
+    },
+    {
+        names: ['help', 'h'],
+        type: 'bool',
+        help: 'Show this help.'
     }
-};
+];
 
-const fileOpt = {
-    file: {
-        abbr: 'f',
-        metavar: 'FILE',
+const fileOpts = [
+    {
+        names: ['file', 'f'],
+        helpArg: 'FILE',
         help: 'Load data from the given file instead of reading from stdin.',
         type: 'string'
     }
-};
+];
 
-const objectOutputOpts = {
-    prettyPrint: {
-        abbr: 'p',
-        full: 'pretty-print',
-        flag: true,
+const objectOutputOpts = [
+    {
+        names: ['pretty-print', 'p'],
+        type: 'bool',
         help: 'Pretty-print the output.'
     },
-    sortKeys: {
-        abbr: 's',
-        full: 'sort-keys',
-        flag: true,
+    {
+        names: ['sort-keys', 's'],
+        type: 'bool',
         help: 'Sort keys in the output.'
     }
-};
+];
 
-const smartOutputOpt = {
-    disableSmartOutput: {
-        abbr: 'S',
-        full: 'disable-smart',
-        flag: true,
-        help: 'Don\'t pretty-print or autopage if stdout is a terminal.'
+const smartOutputOpts = [
+    {
+        names: ['disable-smart', 'S'],
+        type: 'bool',
+        help: 'Don\'t pretty-print or autopage even if stdout is a terminal.'
     }
-};
+];
 
-const sandboxOpts = {
-    moduleDirectories: {
-        abbr: 'M',
-        full: 'module-dir',
-        metavar: 'DIR',
-        list: true,
-        type: 'string',
-        help: 'Add the given directory as a module path. Any .js files in the directory will be loaded before executing. Specify --no-module-dir to disable module directory loading.'
+const sandboxOpts = [
+    {
+        names: ['module-dir', 'M'],
+        helpArg: 'DIR',
+        type: 'arrayOfString',
+        help: 'Add the given directory as a module path. Any .js files in the directory will be loaded before executing.'
     },
-    modulePaths: {
-        abbr: 'm',
-        full: 'module',
-        metavar: 'FILE',
-        list: true,
-        type: 'string',
+    {
+        names: ['module', 'm'],
+        helpArg: 'FILE',
+        type: 'arrayOfString',
         help: 'Load the given JavaScript file before executing. You may repeat this option.'
     }
-};
+];
 
-const withClauseOpt = {
-    disableWithClause: {
-        abbr: 'W',
-        full: 'disable-with',
-        flag: true,
+const withClauseOpts = [
+    {
+        names: ['disable-with', 'W'],
+        type: 'bool',
         help: 'Don\'t wrap the script to execute in a "with" clause.'
     }
-};
+];
 
-function parseCommandLine(commands, runCommand)
+function parseCommandLine(commandFactories, runCommand)
 {
-    let args = process.argv.slice(2),  // remove 'node' and script name
-        defaultCommand = 'script',
+    let { args, subcommand } = getArgsAndSubcommand(commandFactories),
+        commandDesc = commandFactories[subcommand]();
+
+    assembleCommandOptions(commandDesc);
+
+    let minPositionalArguments = commandDesc.minPositionalArguments || 0,
+        maxPositionalArguments = commandDesc.maxPositionalArguments || 0;
+
+    // Special case min specified but not max to mean "at least min, but an unlimited max"
+    if(minPositionalArguments > 0 && maxPositionalArguments === 0) {
+        maxPositionalArguments = Number.MAX_SAFE_INTEGER;
+    }
+
+    let parser = dashdash.createParser({ options: commandDesc.options }),
+        opts;
+
+    try {
+        opts = parser.parse(args, 0);  // 0 is the index in the array at which to start parsing. It defaults to 2, but we already removed stuff at the front.
+
+        if(opts._args.length < minPositionalArguments) {
+            throw new Error('Expected at least ' + minPositionalArguments + ' argument(s), but got ' + opts._args.length);
+        }
+        else if(opts._args.length > maxPositionalArguments) {
+            throw new Error('Expected at most ' + maxPositionalArguments + ' argument(s), but got ' + opts._args.length);
+        }
+    }
+    catch(exc) {
+        console.error('Error: ' + exc.message + '\n');
+        showHelp(subcommand, commandDesc, parser);
+        process.exit(1);
+    }
+
+    if(opts.help) {
+        showHelp(subcommand, commandDesc, parser);
+        process.exit(0);
+    }
+
+    runCommand(commandDesc, opts);
+}
+
+function getArgsAndSubcommand(commandFactories)
+{
+    let defaultCommand = 'script',
+        args = process.argv.slice(2),  // remove 'node' and script name
         scriptName = path.basename(process.argv[1], '.js'),
         firstArg = args[0],
-        parser = require('nomnom'),
-        shallowCopy = utils.shallowCopy;
+        subcommand;
     
     // If we weren't invoked as 'jutil', we were called 'j<command name>',
     // which we massage into the first argument.
-    if(scriptName != 'jutil')
-        args.unshift(scriptName.substr(1));
-    else if(!firstArg || !commands.hasOwnProperty(firstArg))
+    if(scriptName != 'jutil') {
+        subcommand = scriptName.substr(1);
+    }
+    else if(!firstArg || !commandFactories.hasOwnProperty(firstArg))
     {
         // Otherwise, add in the default command 'script', if appropriate:
         // no first arg -> default
         // first arg is not a command name -> default
         
-        args.unshift(defaultCommand);
+        subcommand = defaultCommand;
+    }
+    else {
+        subcommand = args.shift();
     }
     
-    parser.script('jutil');
-    parser.printer((str, code) => {
-        // Wrap the output at terminal width or 80 characters (if not a terminal)
-        let width = process.stdout.isTTY ? process.stdout.getWindowSize()[0] : 80,
-            wrap = require('wordwrap')(width);
+    return { args, subcommand };
+}
 
-        str = wrap(str) + '\n';
-        code = code || 0;
+function assembleCommandOptions(commandDesc)
+{
+    // Gather all the options for this command into commandDesc.options
 
-        if(code === 0)
-            process.stdout.write(str);
-        else
-            process.stderr.write(str);
-        
-        process.exit(code);
-    });
+    if(commandDesc.options === undefined) {
+        commandDesc.options = [];
+    }
+    else {
+        commandDesc.options.unshift({ group: 'Tool Options' });
+    }
 
-    if(process.stdout.isTTY)
-        parser.colors();
+    commandDesc.options.push({ group: 'General Options' });
+    pushAll(globalOpts, commandDesc.options);
+
+    // This one is on by default, so consider omission to be truthy
+    if(commandDesc.hasFileOption === undefined || commandDesc.hasFileOption) {
+        pushAll(fileOpts, commandDesc.options);
+    }
+
+    if(commandDesc.outputsObject || commandDesc.hasSmartOutput) {
+        commandDesc.options.push({ group: 'Output Options' });
+    }
+
+    if(commandDesc.outputsObject) {
+        commandDesc.hasSmartOutput = true;  // outputsObject implies hasSmartOutput
+        pushAll(objectOutputOpts, commandDesc.options);
+    }
+
+    if(commandDesc.hasSmartOutput) {
+        pushAll(smartOutputOpts, commandDesc.options);
+    }
+
+    if(commandDesc.needsSandbox || commandDesc.hasWithClauseOpt) {
+        commandDesc.options.push({ group: 'Sandbox Options' });
+    }
+
+    if(commandDesc.needsSandbox) {
+        pushAll(sandboxOpts, commandDesc.options);
+    }
+
+    if(commandDesc.hasWithClauseOpt) {
+        pushAll(withClauseOpts, commandDesc.options);
+    }
+}
+
+function showHelp(subcommand, commandDesc, parser)
+{
+    let width = process.stdout.isTTY ? process.stdout.getWindowSize()[0] : 80,
+        optionsHelp = parser.help({ maxCol: width }),
+        helpString = 'Usage: jutil ' + subcommand + ' [options] ' + commandDesc.usageString + '\n\n' + commandDesc.help + '\n\nOptions:\n' + optionsHelp;
     
-    parser
-        .nocommand()
-        .help('Run jutil <command> --help to see command-specific options.\nIf no command is specified, the default is "' + defaultCommand + '".');
-    
-    Object.keys(commands).forEach(commandName => {
-        let commandDesc = commands[commandName];
-        let commandObj = parser.command(commandName);
+    process.stderr.write(helpString);
+}
 
-        commandObj.help(commandDesc.help);
-
-        // nomnom seems to freak out if we call options() more than once
-        // on a command object, wo we're gathering all the options in one
-        // place to just make one call.
-
-        shallowCopy(globalOpts, commandDesc.options);
-
-        // This one is on by default, so consider omission to be truthy
-        if(commandDesc.hasFileOption === undefined || commandDesc.hasFileOption) {
-            shallowCopy(fileOpt, commandDesc.options);
-        }
-
-        if(commandDesc.outputsObject) {
-            commandDesc.hasSmartOutput = true;  // outputsObject implies hasSmartOutput
-            shallowCopy(objectOutputOpts, commandDesc.options);
-        }
-
-        if(commandDesc.hasSmartOutput)
-            shallowCopy(smartOutputOpt, commandDesc.options);
-
-        if(commandDesc.needsSandbox)
-            shallowCopy(sandboxOpts, commandDesc.options);
-
-        if(commandDesc.hasWithClauseOpt)
-            shallowCopy(withClauseOpt, commandDesc.options);
-
-        commandObj.options(commandDesc.options);
-
-        commandObj.callback(opts => runCommand(commandDesc, opts));
-    });
-
-    return parser.parse(args);
+function pushAll(values, dest)
+{
+    dest.push.apply(dest, values);
 }

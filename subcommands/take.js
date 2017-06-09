@@ -1,20 +1,17 @@
 'use strict';
 
 module.exports = {
-    help: 'Return a given number of objects from the input.',
-    options: {
-        count: {
-            position: 1,
-            help: 'How many objects to return from the input. If the input has fewer than this number of objects, all of the input is returned.',
-            required: true
-        },
-        fromEnd: {
-            abbr: 'e',
-            full: 'from-end',
-            flag: true,
-            help: 'Take objects from the end of the input rather than the beginning.'
+    help: 'Return a given number of objects from the input. If the input has fewer objects than the given number, all of the input is returned.',
+    usageString: '<count>',
+    minPositionalArguments: 1,
+    maxPositionalArguments: 1,
+    options: [
+        {
+            names: ['from-end', 'e'],
+            type: 'bool',
+            help: 'Remove objects from the end of the input rather than the beginning.'
         }
-    },
+    ],
     outputsObject: true,
     needsSandbox: false,
     hasWithClauseOpt: false,
@@ -23,9 +20,9 @@ module.exports = {
 
 function takeCommandHandler(runtimeSettings, config, opts)
 {
-    let count = parseInt(opts.count);
+    let count = parseInt(opts._args[0]);
     if(isNaN(count)) {
-        console.error('Invalid count parameter: "' + opts.count + '". Expected an integer.');
+        console.error('Invalid count parameter: "' + opts._args[0] + '". Expected an integer.');
         process.exit(1);
     }
 
@@ -33,7 +30,7 @@ function takeCommandHandler(runtimeSettings, config, opts)
     if(!Array.isArray(data))
         data = [data];
 
-    if(opts.fromEnd)
+    if(opts.from_end)
         count = -count;
  
     if(count < 0)

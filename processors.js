@@ -37,13 +37,13 @@ function mapOverInput(expr, runtimeSettings, handleOne, needsReturn = true)
 }
 
 
-function runPredicate(runtimeSettings, opts, handleMatch)
+function runPredicate(predicate, runtimeSettings, handleMatch)
 {
     // This means of detecting falsiness breaks down for boxed booleans:
     // for instance, !!(new Boolean(false)) is true, which is totally obnoxious.
     // This shouldn't be a problem if people don't use 'this' to refer to the
     // current datum, this sidestepping boxing.
-    let expr = '!!(' + opts.predicate + ')';
+    let expr = '!!(' + predicate + ')';
 
     mapOverInput(expr, runtimeSettings, (raw, matched) => {
         if(matched)
