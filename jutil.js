@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-"use strict";
+'use strict';
 
 const vm = require('vm'),
       fs = require('fs'),
@@ -28,7 +28,7 @@ const defaultConfig = {
     // obj: the object to format
     // Return a 'pretty' string representation of obj.
     prettyPrinter(config, obj) {
-        return JSON.stringify(obj, null, config.prettyPrintIndent) + '\n';
+        return JSON.stringify(obj, null, config.prettyPrintIndent);
     },
 
     // The function used to serialize an object into a string when
@@ -351,7 +351,7 @@ function outputObject(obj, runtimeSettings, config)
         return;
     }
 
-    outputString(obj, runtimeSettings, config);
+    outputString(obj + '\n', runtimeSettings, config);
 }
 
 
