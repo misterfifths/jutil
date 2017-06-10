@@ -2,7 +2,7 @@
     "name": "jutil",
     "description": "Command-line utilities for manipulating JSON",
     "homepage": "http://github.com/misterfifths/jutil",
-    "version": "0.6.1",
+    "version": "0.6.2",
     "author": "Tim Clem",
     "license": "MIT",
     "preferGlobal": true,
