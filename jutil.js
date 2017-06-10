@@ -298,7 +298,7 @@ function outputStringWithPaging(str, runtimeSettings, config)
             input: str,
             encoding: 'utf8',
             shell: true,
-            stdio: ['pipe', process.stdout, 'pipe']
+            stdio: ['pipe', process.stdout, process.stderr]
         });
 
     if(pagerRes.error) {
