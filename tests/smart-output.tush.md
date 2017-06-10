@@ -33,11 +33,11 @@ $ echo '[]' | PAGER="$(pwd)/pager-with-side-effects" jutil --force-smart
 If `PAGER` points to a non-existent or non-executable file, the error is printed and output is not paged. Note that in the tests below we have to be tricky, since the exact error message varies between shells. The output will be a pretty-printed array (3 lines) and another for the error:
 
 ```sh
-$ echo '[1]' | PAGER=nonsense jutil --force-smart 2>&1 | wc -l
-|        4
+$ echo '[1]' | PAGER=nonsense jutil --force-smart 2>&1 | wc -l | tr -d ' '
+| 4
 
-$ echo '[1]' | PAGER="$(pwd)" jutil --force-smart 2>&1 | wc -l
-|        4
+$ echo '[1]' | PAGER="$(pwd)" jutil --force-smart 2>&1 | wc -l | tr -d ' '
+| 4
 ```
 
 If `PAGER` exits with a non-zero status code, no special output is produced, but the status code is passed through:
