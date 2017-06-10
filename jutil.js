@@ -301,25 +301,25 @@ function outputStringWithPaging(str, runtimeSettings, config)
             stdio: ['pipe', process.stdout, process.stderr]
         });
 
-    if(pagerRes.error) {
+    if(pagerRes.error && pager.error.code != 'EPIPE') {
         // We ignore EPIPE; just means that they closed the pager before
         // we finished writing (or the pager never started, in which
         // case the status code check will be sufficient).
-        if(pagerRes.error.code != 'EPIPE') {
-            console.warn('Warning: error executing pager: ' + pagerRes.error);
-            dumbOutputString(str, runtimeSettings, config);
-        }
-        else if(pagerRes.status == 126 || pagerRes.status == 127) {
-            // Shell exit codes for non-executable or nonexistent files
-            console.warn('Warning: unable to execute pager');
-            dumbOutputString(str, runtimeSettings, config);
-        }
-        else {
-            // Following the lead of git here - for other errors in
-            // executing the pager, it just lets the stderr stand
-            // for itself and exits with an error code
-            process.exit(pagerRes.status || 1);
-        }
+        console.warn('Warning: error executing pager: ' + pagerRes.error);
+        dumbOutputString(str, runtimeSettings, config);
+    }
+
+    if(pagerRes.status == 126 || pagerRes.status == 127) {
+        // Shell exit codes for non-executable or nonexistent files
+        // In this case the shell will have printed something to stderr,
+        // so we'll suppress an error message of our own.
+        dumbOutputString(str, runtimeSettings, config);
+    }
+    else if(pagerRes.status != 0) {
+        // Following the lead of git here - for other errors in
+        // executing the pager, it just lets the stderr stand
+        // for itself and exits with an error code
+        process.exit(pagerRes.status);
     }
 }
 
