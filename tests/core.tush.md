@@ -116,29 +116,6 @@ $ echo '{"b": 1, "a": 2}' | JUTIL_CONFIG_PATH="$FIXTURE_DIR/sort_and_pretty_prin
 | }
 ```
 
-Errors in configuration files raise an error from jutil:
-
-```sh
-$ echo '{}' | jutil -c config-with-error
-@ Error loading configuration file: ReferenceError: garbage is not defined
-? 1
-```
-
-Configuration files that don't create the mandatory `config` variable result in a warning:
-
-```sh
-$ echo '{}' | jutil -c invalid-config
-| {}
-@ Warning: config file must assign to the global "config" var; ignoring the file
-```
-
-Nonexistent configuration files are ignored silently, and the default configuration is used:
-
-```sh
-$ echo '{}' | jutil -c nonexistent-config
-| {}
-```
-
 For options that are enabled in the configuration file but also available on the command line, you can override the configuration file by passing `--no-<option name>`. For instance:
 
 ```sh

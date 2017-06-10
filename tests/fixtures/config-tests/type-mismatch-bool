@@ -1,0 +1,3 @@
+var config = {
+    alwaysAutoUnwrap: 1
+};
