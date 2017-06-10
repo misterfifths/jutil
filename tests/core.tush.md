@@ -72,7 +72,7 @@ $ echo '{"b": 1, "a": 2}' | jutil -p -s
 Key sorting is recursive:
 
 ```sh
-$ echo '{"b": {"b1": 3, "b2": 4}, "a": {"a2": 2, "a1": 1}}' | jutil -ps
+$ echo '{"b": {"b1": 3, "b2": null}, "a": {"a2": 2, "a1": 1}}' | jutil -ps
 | {
 |     "a": {
 |         "a1": 1,
@@ -80,7 +80,7 @@ $ echo '{"b": {"b1": 3, "b2": 4}, "a": {"a2": 2, "a1": 1}}' | jutil -ps
 |     },
 |     "b": {
 |         "b1": 3,
-|         "b2": 4
+|         "b2": null
 |     }
 | }
 ```
@@ -207,6 +207,13 @@ Similarly:
 ```sh
 $ echo '{}' | jutil -c unwrap-properties-config -a
 | {}
+```
+
+Auto-unwrapping has no effect on arrays:
+
+```sh
+$ echo '[{"x": 2}, {"x": 3}]' | jutil -a
+| [{"x":2},{"x":3}]
 ```
 
 Dot notation also works in properties specified in the configuration file:
@@ -355,6 +362,14 @@ You can load a directory full of modules with the `-M` option. This loads all `.
 ```sh
 $ echo '{ "hashme": "hello" }' | jutil -M modules 'return _($md5(hashme))'
 | {"under":"XUFAKrxLKna5cZ2REBfFkg=="}
+```
+
+If you specify an unreadable directory to `-M` (or, say, a file), it results in a warning:
+
+```sh
+$ echo '{}' | jutil -M modules/md5.js
+| {}
+@ Warning: error reading module directory "$(pwd)/modules/md5.js": Error: ENOTDIR: not a directory, scandir '$(pwd)/modules/md5.js'
 ```
 
 By default, `jutil` loads modules from `~/.jutil/modules`. You can specify more directories in the configuration file:
