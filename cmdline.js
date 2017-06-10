@@ -27,8 +27,7 @@ const globalOpts = [
         names: ['config-file', 'c'],
         helpArg: 'FILE',
         help: 'Load the given config file. The default is the JUTIL_CONFIG_PATH environmental variable or ~/.jutil/config. Specify --no-config-file to use the default configuration.',
-        type: 'string',
-        'default': process.env.JUTIL_CONFIG_PATH || '~/.jutil/config'
+        type: 'string'
     },
     {
         name: 'no-config-file',

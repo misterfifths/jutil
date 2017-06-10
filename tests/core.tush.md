@@ -8,6 +8,7 @@ For convenience, we're going to copy all the [support files](fixtures) for the t
 
 ```sh
 $ cp -r "$FIXTURE_DIR"/* .
+$ cp -r "$FIXTURE_DIR"/config-files/* .
 ```
 
 ## Input
@@ -109,7 +110,7 @@ $ echo '{"b": 1, "a": 2}' | jutil -c sort_and_pretty_print_config
 You can also set a configuration file via environmental variable:
 
 ```sh
-$ echo '{"b": 1, "a": 2}' | JUTIL_CONFIG_PATH="$FIXTURE_DIR/sort_and_pretty_print_config" jutil
+$ echo '{"b": 1, "a": 2}' | JUTIL_CONFIG_PATH="$(pwd)/sort_and_pretty_print_config" jutil
 | {
 |     "a": 2,
 |     "b": 1

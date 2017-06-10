@@ -3,7 +3,7 @@
 Exercising some edge cases and obscure uses of config files. This test has its own batch of configuration files. Let's move those into place:
 
 ```sh
-$ cp -r "$FIXTURE_DIR"/config-tests/* .
+$ cp -r "$FIXTURE_DIR"/config-files/* .
 ```
 
 ## Errors
@@ -24,11 +24,19 @@ $ echo '{}' | jutil -c invalid-config
 @ Warning: config file must assign to the global "config" var; ignoring the file
 ```
 
-Nonexistent configuration files are ignored silently, and the default configuration is used:
+Nonexistent configuration files from an environmental variable are ignored silently, and the default configuration is used:
+
+```sh
+$ echo '{}' | JUTIL_CONFIG_PATH="$(pwd)/nonexistent-config" jutil
+| {}
+```
+
+But nonexistent configuration files explicitly passed on the command line result in a warning:
 
 ```sh
 $ echo '{}' | jutil -c nonexistent-config
 | {}
+@ Warning: unable to load configuration file "nonexistent-config"
 ```
 
 ## Type Warnings
@@ -133,6 +141,6 @@ $ echo '{ "hashme": "hello" }' | jutil -c module-dirs-config --no-module-dir 're
 You can also use `--no-config-file` to completely disable the loading of a configuration file, even if one is specified in your environment.
 
 ```sh
-$ echo '{"b": 1, "a": 2}' | JUTIL_CONFIG_PATH="$FIXTURE_DIR/sort_and_pretty_print_config" jutil --no-config-file
+$ echo '{"b": 1, "a": 2}' | JUTIL_CONFIG_PATH="$(pwd)/sort_and_pretty_print_config" jutil --no-config-file
 | {"b":1,"a":2}
 ```

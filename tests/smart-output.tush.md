@@ -20,13 +20,13 @@ $ echo '[1]' | jutil --force-smart
 If it detects that the output is too big to fit on one screen, it automatically pipes the output to your pager. It uses the `PAGER` environmental variable, or `less` by default. We have a custom pager, `pager-with-side-effects`, that prints a header before the output:
 
 ```sh
-$ echo '[1]' | PAGER="${FIXTURE_DIR}/pager-with-side-effects" jutil --force-smart
+$ echo '[1]' | PAGER="$(pwd)/pager-with-side-effects" jutil --force-smart
 | --PAGING--
 | [
 |     1
 | ]
 
-$ echo '[]' | PAGER="${FIXTURE_DIR}/pager-with-side-effects" jutil --force-smart
+$ echo '[]' | PAGER="$(pwd)/pager-with-side-effects" jutil --force-smart
 | []
 ```
 
@@ -39,11 +39,11 @@ $ echo '[1]' | PAGER=nonsense jutil --force-smart
 | ]
 @ /bin/sh: nonsense: command not found
 
-$ echo '[1]' | PAGER="${FIXTURE_DIR}" jutil --force-smart
+$ echo '[1]' | PAGER="$(pwd)" jutil --force-smart
 | [
 |     1
 | ]
-@ /bin/sh: /Users/tclem/dev/jutil/tests/fixtures: is a directory
+@ /bin/sh: $(pwd): is a directory
 ```
 
 If `PAGER` exits with a non-zero status code, no special output is produced, but the status code is passed through:

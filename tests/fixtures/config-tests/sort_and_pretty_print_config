@@ -1,4 +1,0 @@
-var config = {
-    alwaysSortKeys: true,
-    alwaysPrettyPrint: true
-};

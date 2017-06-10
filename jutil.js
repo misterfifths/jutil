@@ -157,7 +157,7 @@ cmdline.parseCommandLine({
 
 function runCommand(commandDesc, opts)
 {
-    let config = loadConfig(defaultConfig, opts.no_config_file ? undefined : opts.config_file),
+    let config = loadConfig(defaultConfig, opts),
         runtimeSettings = makeRuntimeSettings(commandDesc, config, opts),
         res = commandDesc.handler(runtimeSettings, config, opts);
 
@@ -362,11 +362,25 @@ function outputObject(obj, runtimeSettings, config)
 
 //// Configuration file handling
 
-function loadConfig(defaultConfig, configPath)
+function loadConfig(defaultConfig, opts)
 {
     let config = {},
-        userConfig;
-        
+        userConfig,
+        warnAboutMissingConfig = false,
+        configPath;
+
+    if(!opts.no_config_file) {
+        if(opts.config_file) {
+            // We only warn about a config file missing if they explicitly specified
+            // it on the command line.
+            warnAboutMissingConfig = true;
+            configPath = opts.config_file;
+        }
+        else {
+            configPath = process.env.JUTIL_CONFIG_PATH || '~/.jutil/config';
+        }
+    }
+
     utils.shallowCopy(defaultConfig, config);
 
     if(!configPath)
@@ -387,8 +401,13 @@ function loadConfig(defaultConfig, configPath)
     }
     catch(exc) {
         // It's fine if we didn't find a config file; we'll use the defaults
-        if(exc.code == 'ENOENT')
+        if(exc.code == 'ENOENT') {
+            if(warnAboutMissingConfig) {
+                console.warn('Warning: unable to load configuration file "' + configPath + '"');
+            }
+
             return config;
+        }
         else {
             console.error('Error loading configuration file: ' + exc);
             process.exit(1);
