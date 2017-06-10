@@ -394,3 +394,38 @@ $ echo '{}' | jutil -m broken-module.js
 | {}
 @ Warning: error loading module "broken-module.js": ReferenceError: nope is not defined
 ```
+
+## Some edge cases
+
+### Objects that aren't JSON-convertible
+
+If you manage to create an object that cannot be converted to JSON, such as one that has a circular reference, an error is printed:
+
+```sh
+$ echo '{}' | jtweak '$.self = $'
+@ Error converting result to string: TypeError: Converting circular structure to JSON
+? 1
+```
+
+Similarly, as per the behavior of [JSON.stringify](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify), functions and other such objects are silently omitted from objects or converted to `null` in arrays:
+
+```sh
+$ echo '{}' | jutil 'return {x: () => true, y: 3}'
+| {"y":3}
+
+$ echo '{}' | jutil 'return [1, () => 2, 3]'
+| [1,null,3]
+```
+
+If the returned root object is one of those "censored" types, no output is produced:
+
+```sh
+$ echo '{}' | jutil 'return () => true'
+```
+
+`undefined` does the same, no matter how it is produced:
+
+```sh
+$ echo '{"b": 2}' | jutil 'return [$.a, $.b]'
+| [null,2]
+```
