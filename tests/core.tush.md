@@ -116,26 +116,6 @@ $ echo '{"b": 1, "a": 2}' | JUTIL_CONFIG_PATH="$FIXTURE_DIR/sort_and_pretty_prin
 | }
 ```
 
-For options that are enabled in the configuration file but also available on the command line, you can override the configuration file by passing `--no-<option name>`. For instance:
-
-```sh
-$ echo '{"b": 1, "a": 2}' | jutil -c sort_and_pretty_print_config --no-sort-keys
-| {
-|     "b": 1,
-|     "a": 2
-| }
-
-$ echo '[1]' | jutil -c sort_and_pretty_print_config --no-pretty-print
-| [1]
-```
-
-You can also use `--no-config-file` to completely disable the loading of a configuration file, even if one is specified in your environment.
-
-```sh
-$ echo '{"b": 1, "a": 2}' | JUTIL_CONFIG_PATH="$FIXTURE_DIR/sort_and_pretty_print_config" jutil --no-config-file
-| {"b":1,"a":2}
-```
-
 ## Unwrapping
 
 With some frequency, you may want to operate on just one property of the incoming JSON document. [Unwrapping](../README.md#unwrapping) helps in this case.
@@ -248,13 +228,6 @@ You can turn on auto-unwrapping by default in the config file:
 ```sh
 $ echo '{ "payload": [1, 2, 3] }' | jutil -c always-auto-unwrap-config
 | [1,2,3]
-```
-
-If you do so, you can still forcefully disable auto-unwrapping with `--no-auto-unwrap`:
-
-```sh
-$ echo '{ "payload": [1, 2, 3] }' | jutil -c always-auto-unwrap-config --no-auto-unwrap
-| {"payload":[1,2,3]}
 ```
 
 ## Scripts
@@ -377,14 +350,6 @@ By default, `jutil` loads modules from `~/.jutil/modules`. You can specify more 
 ```sh
 $ echo '{ "hashme": "hello" }' | jutil -c module-dirs-config 'return _($md5(hashme))'
 | {"under":"XUFAKrxLKna5cZ2REBfFkg=="}
-```
-
-If you need to forcefully disable module directory loading, even if it's specified in your config file, use `--no-module-dir`:
-
-```sh
-$ echo '{ "hashme": "hello" }' | jutil -c module-dirs-config --no-module-dir 'return _($md5(hashme))'
-@ Error running script: ReferenceError: _ is not defined
-? 1
 ```
 
 Modules with errors result in a warning:

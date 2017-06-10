@@ -83,7 +83,12 @@ const smartOutputOpts = [
     {
         names: ['disable-smart', 'S'],
         type: 'bool',
-        help: 'Don\'t pretty-print or autopage even if stdout is a terminal.'
+        help: 'Don\'t pretty-print or autopage even if stdout is a terminal. Specify --no-disable-smart to enable smart output even if it is disabled in your config file.'
+    },
+    {
+        name: 'no-disable-smart',
+        hidden: true,
+        type: 'bool'
     },
     {
         // This is for testing purposes where stdout isn't a TTY but we want to do smart stuff anyway
@@ -117,7 +122,12 @@ const withClauseOpts = [
     {
         names: ['disable-with', 'W'],
         type: 'bool',
-        help: 'Don\'t wrap the script to execute in a "with" clause.'
+        help: 'Don\'t wrap the script to execute in a "with" clause. Specify --no-disable-with to enable a "with" clause even if it is disabled in your config file.'
+    },
+    {
+        name: 'no-disable-with',
+        hidden: true,
+        type: 'bool'
     }
 ];
 

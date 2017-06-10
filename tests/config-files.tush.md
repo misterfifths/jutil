@@ -100,3 +100,39 @@ Custom properties in the config file are copied verbatim and available through t
 $ echo '{}' | jutil -c custom-value 'return $config.myValue'
 | 3.14159
 ```
+
+## Overriding config values
+
+For options that are enabled in the configuration file but also available on the command line, you can override the configuration file by passing `--no-<option name>`. For instance:
+
+```sh
+$ echo '{"b": 1, "a": 2}' | jutil -c sort_and_pretty_print_config --no-sort-keys
+| {
+|     "b": 1,
+|     "a": 2
+| }
+
+$ echo '[1]' | jutil -c sort_and_pretty_print_config --no-pretty-print
+| [1]
+
+$ echo '{ "payload": [1, 2, 3] }' | jutil -c always-auto-unwrap-config --no-auto-unwrap
+| {"payload":[1,2,3]}
+
+$ echo '{"x": 2}' | jutil -c disable-with-clause-config --no-disable-with 'return x'
+| 2
+```
+
+If you need to forcefully disable module directory loading, even if it's specified in your config file, use `--no-module-dir`:
+
+```sh
+$ echo '{ "hashme": "hello" }' | jutil -c module-dirs-config --no-module-dir 'return _($md5(hashme))'
+@ Error running script: ReferenceError: _ is not defined
+? 1
+```
+
+You can also use `--no-config-file` to completely disable the loading of a configuration file, even if one is specified in your environment.
+
+```sh
+$ echo '{"b": 1, "a": 2}' | JUTIL_CONFIG_PATH="$FIXTURE_DIR/sort_and_pretty_print_config" jutil --no-config-file
+| {"b":1,"a":2}
+```

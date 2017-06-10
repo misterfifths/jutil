@@ -182,8 +182,12 @@ function makeRuntimeSettings(commandDesc, config, opts)
                 process.stdout.getWindowSize = () => [80, 1];
             }
         }
-        else if(opts.disable_smart || !process.stdout.isTTY) settings.smartOutput = false;
-        else settings.smartOutput = opts.disable_smart === false || !config.disableSmartOutput;
+        else if(process.stdout.isTTY) {
+            if(opts.no_disable_smart) settings.smartOutput = true;
+            else if(opts.disable_smart || config.disableSmartOutput) settings.smartOutput = false;
+            else settings.smartOutput = true;
+        }
+        else settings.smartOutput = false;
     }
 
     if(commandDesc.outputsObject) {
@@ -199,8 +203,9 @@ function makeRuntimeSettings(commandDesc, config, opts)
     }
     
     if(commandDesc.hasWithClauseOpt) {
-        if(opts.disable_with) settings.withClause = false;
-        else settings.withClause = opts.disable_with === false || !config.disableWithClause;
+        if(opts.no_disable_with) settings.withClause = true;
+        else if(opts.disable_with) settings.withClause = false;
+        else settings.withClause = !config.disableWithClause;
     }
     
     if(opts.no_auto_unwrap) { }
@@ -343,7 +348,7 @@ function outputObject(obj, runtimeSettings, config)
         console.error('Error converting result to string: ' + exc);
         process.exit(1);
     }
-    
+
     if(typeof obj != 'string') {
         // JSON.stringify will return undefined if the top-level object is
         // a function or an XML object, neither of which should ever happen,
