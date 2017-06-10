@@ -12,6 +12,14 @@ PAGER=cat \
 TEST_DIR="$(pwd)" \
 JUTIL_CONFIG_PATH="$(pwd)/fixtures/blank-config" \
 FIXTURE_DIR="$(pwd)/fixtures" \
-tush-check -x *.tush.md && \
-echo "All tests passed!" ||
-echo -e "\n----------\nTest failure. See diff above"
+tush-check -x *.tush.md
+
+tush_res=$?
+
+if [ $tush_res -eq 0 ]; then
+    echo "All tests passed!"
+else
+    echo -e "\n----------\nTest failure. See diff above"
+fi
+
+exit $tush_res
