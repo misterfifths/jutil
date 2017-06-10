@@ -4,6 +4,7 @@
 const vm = require('vm'),
       fs = require('fs'),
       path = require('path'),
+      child_process = require('child_process'),
       objectPath = require('object-path'),
       utils = require('./utils.js'),
       cmdline = require('./cmdline.js');
@@ -178,7 +179,7 @@ function makeRuntimeSettings(commandDesc, config, opts)
             // This is a testing flag. If stdout isn't a TTY, we will fake its getWindowSize()
             settings.smartOutput = true;
             if(!process.stdout.isTTY) {
-                process.stdout.getWindowSize = () => [80, 1]
+                process.stdout.getWindowSize = () => [80, 1];
             }
         }
         else if(opts.disable_smart || !process.stdout.isTTY) settings.smartOutput = false;
@@ -292,17 +293,16 @@ function outputString(str, runtimeSettings, config)
 
 function outputStringWithPaging(str, runtimeSettings, config)
 {
-    let pagerCmd = process.env.PAGER || 'less';
-
-    let pagerRes = require('child_process').spawnSync(pagerCmd, {
-        input: str,
-        encoding: 'utf8',
-        shell: true,
-        stdio: ['pipe', process.stdout, 'pipe']
-    });
+    let pagerCmd = process.env.PAGER || 'less',
+        pagerRes = child_process.spawnSync(pagerCmd, {
+            input: str,
+            encoding: 'utf8',
+            shell: true,
+            stdio: ['pipe', process.stdout, 'pipe']
+        });
 
     if(pagerRes.error) {
-        // We silence EPIPE; just means that they closed the pager before
+        // We ignore EPIPE; just means that they closed the pager before
         // we finished writing (or the pager never started, in which
         // case the status code check will be sufficient).
         if(pagerRes.error.code != 'EPIPE') {
