@@ -301,7 +301,7 @@ function outputStringWithPaging(str, runtimeSettings, config)
             stdio: ['pipe', process.stdout, process.stderr]
         });
 
-    if(pagerRes.error && pager.error.code != 'EPIPE') {
+    if(pagerRes.error && pagerRes.error.code != 'EPIPE') {
         // We ignore EPIPE; just means that they closed the pager before
         // we finished writing (or the pager never started, in which
         // case the status code check will be sufficient).
