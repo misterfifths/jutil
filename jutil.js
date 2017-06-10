@@ -174,7 +174,14 @@ function makeRuntimeSettings(commandDesc, config, opts)
     let settings = {};
     
     if(commandDesc.hasSmartOutput) {
-        if(opts.disable_smart || !process.stdout.isTTY) settings.smartOutput = false;
+        if(opts.force_smart) {
+            // This is a testing flag. If stdout isn't a TTY, we will fake its getWindowSize()
+            settings.smartOutput = true;
+            if(!process.stdout.isTTY) {
+                process.stdout.getWindowSize = () => [80, 1]
+            }
+        }
+        else if(opts.disable_smart || !process.stdout.isTTY) settings.smartOutput = false;
         else settings.smartOutput = opts.disable_smart === false || !config.disableSmartOutput;
     }
 
@@ -276,38 +283,49 @@ function stringHasMoreLinesThanStdout(str)
 function outputString(str, runtimeSettings, config)
 {
     if(runtimeSettings.smartOutput && stringHasMoreLinesThanStdout(str)) {
-        // Autopage
-        let pagerCmd = process.env.PAGER || 'less';
-        let pagerArgs = [];
-
-        // TODO: this is a pretty naive processing of arguments embedded in $PAGER
-        if(pagerCmd.indexOf(' ') != -1) {
-            let pagerSplit = pagerCmd.split(' ');
-            pagerCmd = pagerSplit[0];
-            pagerArgs = pagerSplit.slice(1);
-        }
-
-        let pager = require('child_process').spawn(pagerCmd, pagerArgs, {
-                        stdio: ['pipe', process.stdout, 'pipe']
-                    });
-
-        pager.stderr.setEncoding('utf8');
-        pager.stderr.on('data', data => {
-            console.error('Error running pager command ("' + pagerCmd + '"): ' + data);
-            process.exit(1);
-        });
-
-        pager.stdin.end(str);
-        pager.stdin.on('error', exc => {
-            // Silence EPIPE; just means that they closed the pager before
-            // we finished writing (or the pager never started, in which
-            // case the stderr output will be sufficient).
-            if(exc.code != 'EPIPE')
-                throw exc;
-        });
+        outputStringWithPaging(str, runtimeSettings, config);
     }
-    else
-        process.stdout.write(str);
+    else {
+        dumbOutputString(str, runtimeSettings, config);
+    }
+}
+
+function outputStringWithPaging(str, runtimeSettings, config)
+{
+    let pagerCmd = process.env.PAGER || 'less';
+
+    let pagerRes = require('child_process').spawnSync(pagerCmd, {
+        input: str,
+        encoding: 'utf8',
+        shell: true,
+        stdio: ['pipe', process.stdout, 'pipe']
+    });
+
+    if(pagerRes.error) {
+        // We silence EPIPE; just means that they closed the pager before
+        // we finished writing (or the pager never started, in which
+        // case the status code check will be sufficient).
+        if(pagerRes.error.code != 'EPIPE') {
+            console.warn('Warning: error executing pager: ' + pagerRes.error);
+            dumbOutputString(str, runtimeSettings, config);
+        }
+        else if(pagerRes.status == 126 || pagerRes.status == 127) {
+            // Shell exit codes for non-executable or nonexistent files
+            console.warn('Warning: unable to execute pager');
+            dumbOutputString(str, runtimeSettings, config);
+        }
+        else {
+            // Following the lead of git here - for other errors in
+            // executing the pager, it just lets the stderr stand
+            // for itself and exits with an error code
+            process.exit(pagerRes.status || 1);
+        }
+    }
+}
+
+function dumbOutputString(str, runtimeSettings, config)
+{
+    process.stdout.write(str);
 }
 
 function outputObject(obj, runtimeSettings, config)

@@ -84,6 +84,12 @@ const smartOutputOpts = [
         names: ['disable-smart', 'S'],
         type: 'bool',
         help: 'Don\'t pretty-print or autopage even if stdout is a terminal.'
+    },
+    {
+        // This is for testing purposes where stdout isn't a TTY but we want to do smart stuff anyway
+        name: 'force-smart',
+        hidden: true,
+        type: 'bool'
     }
 ];
 
