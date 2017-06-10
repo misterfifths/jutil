@@ -320,7 +320,7 @@ function outputStringWithPaging(str, runtimeSettings, config)
         // so we'll suppress an error message of our own.
         dumbOutputString(str, runtimeSettings, config);
     }
-    else if(pagerRes.status != 0) {
+    else if(pagerRes.status !== 0) {
         // Following the lead of git here - for other errors in
         // executing the pager, it just lets the stderr stand
         // for itself and exits with an error code
