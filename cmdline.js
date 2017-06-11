@@ -137,6 +137,23 @@ function parseCommandLine(commandFactories, runCommand)
 
     assembleCommandOptions(commandDesc);
 
+    let parser = dashdash.createParser({ options: commandDesc.options }),
+        opts;
+
+    try {
+        opts = parser.parse(args, 0);  // 0 is the index in the array at which to start parsing. It defaults to 2, but we already removed stuff at the front.
+    }
+    catch(exc) {
+        console.error('Error: ' + exc.message + '\n');
+        showHelp(subcommand, commandDesc, parser);
+        process.exit(1);
+    }
+
+    if(opts.help) {
+        showHelp(subcommand, commandDesc, parser);
+        process.exit(0);
+    }
+
     let minPositionalArguments = commandDesc.minPositionalArguments || 0,
         maxPositionalArguments = commandDesc.maxPositionalArguments || 0;
 
@@ -145,12 +162,7 @@ function parseCommandLine(commandFactories, runCommand)
         maxPositionalArguments = Number.MAX_SAFE_INTEGER;
     }
 
-    let parser = dashdash.createParser({ options: commandDesc.options }),
-        opts;
-
     try {
-        opts = parser.parse(args, 0);  // 0 is the index in the array at which to start parsing. It defaults to 2, but we already removed stuff at the front.
-
         if(opts._args.length < minPositionalArguments) {
             throw new Error('Expected at least ' + minPositionalArguments + ' argument(s), but got ' + opts._args.length);
         }
@@ -162,11 +174,6 @@ function parseCommandLine(commandFactories, runCommand)
         console.error('Error: ' + exc.message + '\n');
         showHelp(subcommand, commandDesc, parser);
         process.exit(1);
-    }
-
-    if(opts.help) {
-        showHelp(subcommand, commandDesc, parser);
-        process.exit(0);
     }
 
     runCommand(commandDesc, opts);
