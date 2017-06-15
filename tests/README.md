@@ -1,0 +1,1 @@
+These tests are written in a literate syntax, originally for [tush](https://github.com/adolfopa/tush), but now run with [slightish](https://github.com/misterfifths/slightish). Feel free to click around; the tests are readable and serve as a secondary source of examples and documentation.
