@@ -5,7 +5,7 @@ cd "$here"
 
 if ! type slightish >/dev/null; then
     echo 'Please install the slightish test framework:' >&2
-    echo '$ [sudo] gem install slightish'
+    echo '$ [sudo] gem install slightish' >&2
     exit 2
 fi
 
