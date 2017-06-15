@@ -5,4 +5,6 @@ node_js:
 cache:
     directories:
         - "node_modules"
+
+install: gem install slightish
 after_success: npm run coverage

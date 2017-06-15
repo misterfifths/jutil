@@ -1,0 +1,15 @@
+#!/bin/bash
+
+here=`dirname "$0"`
+cd "$here"
+
+if ! type slightish >/dev/null; then
+    echo 'Please install the slightish test framework:' >&2
+    echo '$ [sudo] gem install slightish'
+    exit 2
+fi
+
+PAGER=cat \
+JUTIL_CONFIG_PATH="$(pwd)/fixtures/blank-config" \
+SLIGHTISH_TEMPLATE_DIR="$(pwd)/fixtures" \
+slightish *.tush.md

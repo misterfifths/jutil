@@ -3,7 +3,7 @@
 Exercising some edge cases and obscure uses of config files. This test has its own batch of configuration files. Let's move those into place:
 
 ```sh
-$ cp -r "$FIXTURE_DIR"/config-files/* .
+$ cp -r config-files/* .
 ```
 
 ## Errors

@@ -4,11 +4,10 @@ This file contains tests of functionality that is shared among all (or most) of 
 
 Before we get started, it's worth noting that the `run_tests` script sets the `JUTIL_CONFIG_PATH` environmental variable to point to a blank [configuration file](../README.md#config-files) to ensure we're using default options.
 
-For convenience, we're going to copy all the [support files](fixtures) for the tests into the test directory:
+For convenience, we're going to copy all the [config files](fixtures/config-files) for the tests into the test directory:
 
 ```sh
-$ cp -r "$FIXTURE_DIR"/* .
-$ cp -r "$FIXTURE_DIR"/config-files/* .
+$ cp -r config-files/* .
 ```
 
 ## Input

@@ -50,7 +50,7 @@ $ echo '[1]' | PAGER='exit 27' jutil --force-smart
 Complex `PAGER` values are supported (it is interpreted by a shell):
 
 ```sh
-$ echo '[1]' | PAGER='IN_A_SHELL="YES" cat' jutil --force-smart
+$ echo '[1]' | PAGER='MY_PAGER="cat"; $MY_PAGER' jutil --force-smart
 | [
 |     1
 | ]
