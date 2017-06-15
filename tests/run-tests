@@ -9,6 +9,7 @@ if ! type slightish >/dev/null; then
     exit 2
 fi
 
+PATH="$(pwd)/bin:$PATH" \
 PAGER=cat \
 JUTIL_CONFIG_PATH="$(pwd)/fixtures/blank-config" \
 SLIGHTISH_TEMPLATE_DIR="$(pwd)/fixtures" \
