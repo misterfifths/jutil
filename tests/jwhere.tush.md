@@ -1,6 +1,6 @@
 # `jwhere`
 
-Assuming your input is an array, `jwhere` iterates over each element in the input and returns any objects that match the predicate you provide. The predicate is executed in a similar context to that of [`jutil`](../README.md#jutil), but must be an expression and not a full program. The `return` statement is explicit.
+Assuming your input is an array, `jwhere` iterates over each element in the input and returns any objects that match the predicate you provide. The predicate is executed in a similar context to that of [`jutil`](../README.md#jutil), but must be an expression and not a full program. The `return` statement is implicit.
 
 ```sh
 $ echo '[{"i": 1}, {"i": 3}, {"i": 5}]' | jwhere -p 'i > 2'

@@ -1,6 +1,6 @@
 # Argument parsing odds and ends
 
-Nothing particularly intersting in here; just exercising some edge cases of the argument parsing code.
+Nothing particularly interesting in here; just exercising some edge cases of the argument parsing code.
 
 Tools like `jutil` that accept an optional positional argument should accept zero or one arguments, but no more:
 
