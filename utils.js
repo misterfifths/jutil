@@ -35,12 +35,14 @@ function loadJSON(inputFile, runtimeSettings, config, failureIsFatal = true)
         data = runtimeSettings.inputParser(config, input);
     }
     catch(exc) {
+        /* istanbul ignore else */
         if(failureIsFatal) {
             console.error('Error parsing input: ' + exc + '.\nInput:\n' + input);
             process.exit(1);
         }
-
-        throw exc;
+        else {
+            throw exc;
+        }
     }
 
     if(runtimeSettings.unwrapper)

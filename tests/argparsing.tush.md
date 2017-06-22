@@ -62,3 +62,13 @@ Passing `--help` should show usage and ignore all other arguments:
 $ echo '[]' | jutil 'return $' --help
 @ $(jutil --help 2>&1)
 ```
+
+Passing nothing to an argument that requires a value should show an error and usage:
+
+```sh
+$ jutil -f
+@ Error: do not have enough args for "-f" option
+@ 
+@ $(jutil --help 2>&1)
+? 1
+```

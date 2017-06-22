@@ -133,6 +133,7 @@ const defaultConfig = {
 
 
 // For now (?) we do nothing if imported elsewhere via require
+/* istanbul ignore next */
 if(require.main != module) {
     return;
 }
@@ -175,9 +176,12 @@ function makeRuntimeSettings(commandDesc, config, opts)
     let settings = {};
     
     if(commandDesc.hasSmartOutput) {
+        /* istanbul ignore else */
         if(opts.force_smart) {
             // This is a testing flag. If stdout isn't a TTY, we will fake its getWindowSize()
             settings.smartOutput = true;
+
+            /* istanbul ignore else */
             if(!process.stdout.isTTY) {
                 process.stdout.getWindowSize = () => [80, 1];
             }
@@ -298,6 +302,9 @@ function outputString(str, runtimeSettings, config)
 
 function outputStringWithPaging(str, runtimeSettings, config)
 {
+    // Testing 'less' as the pager is next to impossible; ignoring this
+    // for coverage.
+    /* istanbul ignore next */
     let pagerCmd = process.env.PAGER || 'less',
         pagerRes = child_process.spawnSync(pagerCmd, {
             input: str,
@@ -306,6 +313,9 @@ function outputStringWithPaging(str, runtimeSettings, config)
             stdio: ['pipe', process.stdout, process.stderr]
         });
 
+    // A non-EPIPE non-not-found error is hard to reproduce in testing,
+    // so we're ignoring this if for coverage.
+    /* istanbul ignore next */
     if(pagerRes.error && pagerRes.error.code != 'EPIPE') {
         // We ignore EPIPE; just means that they closed the pager before
         // we finished writing (or the pager never started, in which
@@ -313,8 +323,7 @@ function outputStringWithPaging(str, runtimeSettings, config)
         console.warn('Warning: error executing pager: ' + pagerRes.error);
         dumbOutputString(str, runtimeSettings, config);
     }
-
-    if(pagerRes.status == 126 || pagerRes.status == 127) {
+    else if(pagerRes.status == 126 || pagerRes.status == 127) {
         // Shell exit codes for non-executable or nonexistent files
         // In this case the shell will have printed something to stderr,
         // so we'll suppress an error message of our own.
@@ -377,6 +386,7 @@ function loadConfig(defaultConfig, opts)
             configPath = opts.config_file;
         }
         else {
+            /* istanbul ignore next */
             configPath = process.env.JUTIL_CONFIG_PATH || '~/.jutil/config';
         }
     }
@@ -547,6 +557,9 @@ function sortObject(obj)
        obj.constructor.name == 'Boolean')
         return obj.valueOf();
 
+    // Can't figure out a good way to test this, but it should never happen
+    // anyway unless someone's doing something crazy.
+    /* istanbul ignore if */
     if(typeof obj != 'object')
         return obj;
     

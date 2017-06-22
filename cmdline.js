@@ -189,6 +189,7 @@ function getArgsAndSubcommand(commandFactories)
     
     // If we weren't invoked as 'jutil', we were called 'j<command name>',
     // which we massage into the first argument.
+    /* istanbul ignore else */
     if(scriptName != 'jutil') {
         subcommand = scriptName.substr(1);
     }
@@ -201,6 +202,8 @@ function getArgsAndSubcommand(commandFactories)
         subcommand = defaultCommand;
     }
     else {
+        // This will never happen unless we're run as "jutil.js <something-not-real>", which
+        // won't happen after being installed with npm.
         subcommand = args.shift();
     }
     
@@ -254,6 +257,7 @@ function assembleCommandOptions(commandDesc)
 
 function showHelp(subcommand, commandDesc, parser)
 {
+    /* istanbul ignore next */
     let width = process.stdout.isTTY ? process.stdout.getWindowSize()[0] : 80,
         optionsHelp = parser.help({ maxCol: width, indent: 2, headingIndent: 0 }),
         helpString = 'Usage: jutil ' + subcommand + ' [options] ' + commandDesc.usageString + '\n\n' + commandDesc.help + '\n\n' + optionsHelp;
