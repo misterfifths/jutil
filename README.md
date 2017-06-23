@@ -214,7 +214,7 @@ speed                45
 
 ## jcat
 
-This tool concatenates the objects in multiple JSON files. If given arrays, they are all concatenated. For example, assume we have a few files: `array_1-3.json` and `array_3-5.json` that contain array of their titular numbers. Then:
+This tool concatenates the objects in multiple JSON files. If given arrays, they are all concatenated. It's effectively JSON-aware `cat`. For example, assume we have a few files: `array_1-3.json` and `array_3-5.json` that contain array of their titular numbers. Then:
 
 ```sh
 $ jcat array_1-3.json array_3-5.json
@@ -260,9 +260,47 @@ $ jcat first.json
 
 ## jtweak
 
-This tool lets you modify your data by writing a short script that tweaks the values of records. See the [tests](tests/jtweak.tush.md) for examples.
+This command allows you to modify your input data in-place using a script. Any changes your script makes to `$` are propagated to the output. So, you can add new properties:
 
-## Putting it all together
+```sh
+$ echo '{"x": 2}' | jtweak '$.sqrt = Math.sqrt(x)'
+{
+    "x": 2,
+    "sqrt": 1.4142135623730951
+}
+```
+
+Delete existing properties:
+
+```sh
+$ echo '{"x": 1, "y": 3, "z": 5}' | jtweak 'delete x'
+{
+    "y": 3,
+    "z": 5
+}
+```
+
+Modify existing properties:
+
+```sh
+$ echo '{"x": 2, "y": 3}' | jtweak 'x = y + 1'
+{
+    "x": 4,
+    "y": 3
+}
+```
+
+Or completely reassign `$`:
+
+```sh
+$ echo '{"x": 3}' | jtweak '$ = {"y": 8}'
+{
+    "y": 8
+}
+```
+
+
+# Putting it all together
 
 Since most of these tools output JSON, you can chain them together like crazy. And `jformat` opens the door to programs that don't understand JSON. [One thing well](http://en.wikipedia.org/wiki/Unix_philosophy), baby!
 
@@ -298,7 +336,7 @@ $ curl -s https://api.github.com/gists |
 Say the [names of all the Pokemon](https://soundcloud.com/tim-clem-404086192/all-pokemon):
 
 ```sh
-$ curl -s ttp://www.pokeapi.co/api/v2/pokedex/1/ |
+$ curl -s http://www.pokeapi.co/api/v2/pokedex/1/ |
   jformat -u pokemon_entries -n '%{pokemon_species.name}, ' |
   say -v Alex -f -
 ```
