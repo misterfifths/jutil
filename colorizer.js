@@ -75,14 +75,23 @@ function colorize(input)
     // into lines and do it ourself.
 
     const lines = input.split('\n');
-    let res = '';
-    for(let line of lines) {
+
+    let res = '',
+        newline = '\n';
+
+    for(let i = 0; i < lines.length; i++) {
+        let line = lines[i];
+
+        if(i == lines.length - 1) newline = '';
+
         // This regex should match every line in prettified JSON, extracting
         // a key if one is present, and a value.
         const kvMatch = keyValueRE.exec(line);
+
+        /* istanbul ignore if */
         if(!kvMatch) {
             // Shouldn't happen
-            res += line + '\n';
+            res += line + newline;
             continue;
         }
 
@@ -91,7 +100,7 @@ function colorize(input)
               colon = kvMatch[3] || '',
               value = kvMatch[4],
               comma = kvMatch[5] || '';
-        
+
         let colorizedKey = key;
         if(key) colorizedKey = colorizeKey(key);
         res += leadingWhitespace +
@@ -99,7 +108,7 @@ function colorize(input)
                colon +
                colorizeValue(value) +
                comma +
-               '\n';
+               newline;
     }
 
     return res;
