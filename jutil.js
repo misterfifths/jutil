@@ -6,6 +6,8 @@ const vm = require('vm'),
       path = require('path'),
       child_process = require('child_process'),
       objectPath = require('object-path'),
+      supportsColor = require('supports-color'),
+      jsonColorizer = require('./colorizer.js'),
       utils = require('./utils.js'),
       cmdline = require('./cmdline.js');
 
@@ -58,10 +60,15 @@ const defaultConfig = {
     // Always pretty-print the output. Not recommend (as it's a waste of
     // cycles) if you do a lot of piping of output.
     alwaysPrettyPrint: false,
+
+    // JSON colorization options. Specify "off" to never colorize, "force"
+    // to always colorize, "auto" to colorize if stdout is a terminal, or
+    // "auto+pager" to colorize if stdout is a terminal or the pager.
+    color: 'auto',
     
     // By default, if stdout is a terminal, the output will be pretty-printed
     // and, if it is larger than your window, piped into your pager (the PAGER
-    // environment variable or 'less', by default). Setting this to true
+    // environment variable or 'less -R', by default). Setting this to true
     // disables that behavior.
     disableSmartOutput: false,
     
@@ -195,13 +202,33 @@ function makeRuntimeSettings(commandDesc, config, opts)
     }
 
     if(commandDesc.outputsObject) {
+        let prettyPrinting = false;
+
         if(opts.no_pretty_print)
             settings.outputFormatter = config.unprettyPrinter;
-        else if(opts.pretty_print || config.alwaysPrettyPrint || settings.smartOutput)
+        else if(opts.pretty_print || config.alwaysPrettyPrint || settings.smartOutput) {
             settings.outputFormatter = config.prettyPrinter;
+            prettyPrinting = true;
+        }
         else
             settings.outputFormatter = config.unprettyPrinter;
-    
+
+        if(prettyPrinting) {
+            let colorOption = opts.color || config.color;
+
+            if(supportsColor) {
+                if(colorOption == 'auto') {
+                    settings.colorizeIfNotPaging = true;
+                }
+                else if(colorOption == 'auto+pager') {
+                    settings.colorizeIfNotPaging = settings.colorizeIfPaging = true;
+                }
+            }
+            else if(colorOption == 'force') {
+                settings.colorizeIfNotPaging = settings.colorizeIfPaging = true;
+            }
+        }
+
         if(opts.no_sort_keys) { }
         else if(opts.sort_keys || config.alwaysSortKeys) settings.sortKeys = true;
     }
@@ -293,9 +320,11 @@ function stringHasMoreLinesThanStdout(str)
 function outputString(str, runtimeSettings, config)
 {
     if(runtimeSettings.smartOutput && stringHasMoreLinesThanStdout(str)) {
+        if(runtimeSettings.colorizeIfPaging) str = jsonColorizer(str);
         outputStringWithPaging(str, runtimeSettings, config);
     }
     else {
+        if(runtimeSettings.colorizeIfNotPaging) str = jsonColorizer(str);
         dumbOutputString(str, runtimeSettings, config);
     }
 }
@@ -305,7 +334,7 @@ function outputStringWithPaging(str, runtimeSettings, config)
     // Testing 'less' as the pager is next to impossible; ignoring this
     // for coverage.
     /* istanbul ignore next */
-    let pagerCmd = process.env.PAGER || 'less',
+    let pagerCmd = process.env.PAGER || 'less -R',
         pagerRes = child_process.spawnSync(pagerCmd, {
             input: str,
             encoding: 'utf8',
@@ -433,6 +462,7 @@ function loadConfig(defaultConfig, opts)
         copyFunctionSetting(userConfig, config, 'inputParser', 3);
         copyBooleanSetting(userConfig, config, 'alwaysSortKeys');
         copyBooleanSetting(userConfig, config, 'alwaysPrettyPrint');
+        copyEnumSetting(userConfig, config, 'color', ['off', 'force', 'auto', 'auto+pager']);
         copyBooleanSetting(userConfig, config, 'alwaysAutoUnwrap');
         copyStringArraySetting(userConfig, config, 'autoUnwrapProperties');
         copyFunctionSetting(userConfig, config, 'autoUnwrapper', 2);
@@ -506,6 +536,18 @@ function copyBooleanSetting(userConfig, config, name)
             config[name] = userConfig[name];
         else
             console.warn('Warning: ' + name + ' property in config file must be a boolean; ignoring the setting');
+    }
+}
+
+function copyEnumSetting(userConfig, config, name, validValues)
+{
+    if(userConfig.hasOwnProperty(name)) {
+        if(validValues.indexOf(userConfig[name]) != -1)
+            config[name] = userConfig[name];
+        else {
+            let validValuesString = validValues.join(', ');
+            console.warn('Warning: ' + name + ' property in config file must be one of (' + validValuesString + '); ignoring the setting');
+        }
     }
 }
 

@@ -55,6 +55,19 @@ const fileOpts = [
     }
 ];
 
+dashdash.addOptionType({
+    name: 'colorOptions',
+    takesArg: true,
+    helpArg: 'OPTION',
+    parseArg(option, optStr, arg) {
+        const validOptions = ['off', 'force', 'auto', 'auto+pager'];
+        if(validOptions.indexOf(arg) == -1) {
+            throw new Error('argument for ' + optStr + ' is not valid');
+        }
+        return arg;
+    }
+});
+
 const objectOutputOpts = [
     {
         names: ['pretty-print', 'p'],
@@ -75,6 +88,11 @@ const objectOutputOpts = [
         name: 'no-sort-keys',
         hidden: true,
         type: 'bool'
+    },
+    {
+        name: 'color',
+        type: 'colorOptions',
+        help: 'JSON colorizing options. Specify "off" to never colorize, "force" to always colorize, "auto" to colorize when printing to a TTY, or "auto+pager" to colorize when printing to a TTY or the pager.'
     }
 ];
 
