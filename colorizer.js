@@ -2,9 +2,16 @@
 
 const ansiStyles = require('ansi-styles');
 
-const keyValueRE = /^(\s*)(".*")(\s*:\s*)(.+)$/,
+const keyValueRE = /^(\s*)(?:(".*")(: ))?(.*?)(,?)$/,
       zeroCharCode = '0'.charCodeAt(0),
       nineCharCode = '9'.charCodeAt(0);
+
+const stylesByType = {
+    str: ansiStyles.yellow,
+    bool: ansiStyles.blue,
+    null: ansiStyles.red,
+    num: ansiStyles.cyan
+};
 
 function applyStyle(style, s)
 {
@@ -13,42 +20,46 @@ function applyStyle(style, s)
 
 function colorizeValue(s)
 {
-    const firstChar = s.charAt(0),
-          lastChar = s.charAt(s.length - 1);
-    
-    let comma = '';
-    
-    if(lastChar == ',') {
-        comma = ',';
-        s = s.substr(0, s.length - 1);
-    }
+    // This function is fed values as extracted from the regex - no whitespace and
+    // no trailing comma. That means there are preciously few options for what we
+    // get, and we can judge our response based entirely on the first character.
 
+    const firstChar = s.charAt(0);
+
+    // pass through braces
     if(firstChar == '[' || firstChar == ']' || firstChar == '{' || firstChar == '}') {
-        return s + comma;
+        return s;
     }
     
+    // quotes mean string
     if(firstChar == '"') {
-        return applyStyle(ansiStyles.yellow, s) + comma;
+        return applyStyle(stylesByType.str, s);
     }
 
+    // 't' or 'f' means 'true' or 'false'
     if(firstChar == 't' || firstChar == 'f') {
-        return applyStyle(ansiStyles.blue, s) + comma;
+        return applyStyle(stylesByType.bool, s);
     }
 
-    if(firstChar == 'n') {
-        return applyStyle(ansiStyles.red, s) + comma;
-    }
-
+    // a minus means a negative number
     if(firstChar == '-') {
-        return applyStyle(ansiStyles.cyan, s) + comma;
+        return applyStyle(stylesByType.num, s);
     }
 
-    const firstCharCode = s.charCodeAt(0);
+    // 0-9 means a positive number
+    const firstCharCode = firstChar.charCodeAt(0);
     if(firstCharCode >= zeroCharCode && firstCharCode <= nineCharCode) {
-        return applyStyle(ansiStyles.cyan, s) + comma;
+        return applyStyle(stylesByType.num, s);
     }
 
-    return s + comma;
+    // 'n' means 'null'
+    if(firstChar == 'n') {
+        return applyStyle(stylesByType.null, s);
+    }
+
+    // This shouldn't happen; the above optiosn are exhaustive if we were
+    // given valid prettified JSON.
+    return s;
 }
 
 function colorizeKey(k)
@@ -58,21 +69,37 @@ function colorizeKey(k)
 
 function colorize(input)
 {
+    // Ideally this whole thing could be replaced with a call to input.replace
+    // with the regex (flagged gm) and an appropriate replacer function, but that
+    // was orders of magnitude slower in my testing. So we'll split the input
+    // into lines and do it ourself.
+
     const lines = input.split('\n');
     let res = '';
     for(let line of lines) {
+        // This regex should match every line in prettified JSON, extracting
+        // a key if one is present, and a value.
         const kvMatch = keyValueRE.exec(line);
         if(!kvMatch) {
-            res += colorizeValue(line) + '\n';
+            // Shouldn't happen
+            res += line + '\n';
             continue;
         }
 
-        const prefix = kvMatch[1],
-              key = kvMatch[2],
-              colon = kvMatch[3],
-              value = kvMatch[4];
+        const leadingWhitespace = kvMatch[1] || '',
+              key = kvMatch[2] || '',
+              colon = kvMatch[3] || '',
+              value = kvMatch[4],
+              comma = kvMatch[5] || '';
         
-        res += prefix + colorizeKey(key) + colon + colorizeValue(value) + '\n';
+        let colorizedKey = key;
+        if(key) colorizedKey = colorizeKey(key);
+        res += leadingWhitespace +
+               colorizedKey +
+               colon +
+               colorizeValue(value) +
+               comma +
+               '\n';
     }
 
     return res;
