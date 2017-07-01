@@ -100,6 +100,18 @@ $ echo '[1, 2]' | jutil -c pretty-print-indent-bad -p
 @ Warning: prettyPrintIndent property in config file must be a number or string; ignoring the setting
 ```
 
+The `color` option must be one of a predetermined set of strings. Other types or invalid strings generate warnings.
+
+```sh
+$ echo '{}' | jutil -c type-mismatch-enum
+| {}
+@ Warning: color property in config file must be one of (off, force, auto, auto+pager); ignoring the setting
+
+$ echo '{}' | jutil -c invalid-enum-value
+| {}
+@ Warning: color property in config file must be one of (off, force, auto, auto+pager); ignoring the setting
+```
+
 ## Custom values
 
 Custom properties in the config file are copied verbatim and available through the `$config` variable in the script environment:
@@ -138,7 +150,14 @@ $ echo '{ "hashme": "hello" }' | jutil -c module-dirs-config --no-module-dir 're
 ? 1
 ```
 
-You can also use `--no-config-file` to completely disable the loading of a configuration file, even if one is specified in your environment.
+Similarly, specifying a `--color` option on the command line will override one in a configuration file:
+
+```sh
+$ echo '[1]' | jutil -c force-color-config --color=off
+| [1]
+```
+
+You can use `--no-config-file` to completely disable the loading of a configuration file, even if one is specified in your environment.
 
 ```sh
 $ echo '{"b": 1, "a": 2}' | JUTIL_CONFIG_PATH="$(pwd)/sort_and_pretty_print_config" jutil --no-config-file

@@ -72,3 +72,13 @@ $ jutil -f
 @ $(jutil --help 2>&1)
 ? 1
 ```
+
+Passing an invalid value to an argument that expects a specific set of options (like `--color`) should show an error and usage:
+
+```sh
+$ jutil --color=no-thanks
+@ Error: argument for --color is not valid
+@ 
+@ $(jutil --help 2>&1)
+? 1
+```
