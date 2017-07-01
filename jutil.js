@@ -216,13 +216,12 @@ function makeRuntimeSettings(commandDesc, config, opts)
         if(prettyPrinting) {
             let colorOption = opts.color || config.color;
 
-            if(supportsColor) {
-                if(colorOption == 'auto') {
-                    settings.colorizeIfNotPaging = true;
-                }
-                else if(colorOption == 'auto+pager') {
-                    settings.colorizeIfNotPaging = settings.colorizeIfPaging = true;
-                }
+            /* istanbul ignore else */
+            if(colorOption == 'auto') {
+                settings.colorizeIfNotPaging = supportsColor;
+            }
+            else if(colorOption == 'auto+pager') {
+                settings.colorizeIfNotPaging = settings.colorizeIfPaging = supportsColor;
             }
             else if(colorOption == 'force') {
                 settings.colorizeIfNotPaging = settings.colorizeIfPaging = true;
