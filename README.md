@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/misterfifths/jutil.svg?branch=master)](https://travis-ci.org/misterfifths/jutil) [![Coverage Status](https://coveralls.io/repos/github/misterfifths/jutil/badge.svg?branch=master)](https://coveralls.io/github/misterfifths/jutil?branch=master) [![npm](https://img.shields.io/npm/v/jutil.svg)](https://www.npmjs.com/package/jutil)
 
-Do a lot of testing of JSON APIs from the command line? Insulted by doing mindless greps against structured data? Fingers sore from typing `| python -mjson.tool`?
+Do a lot of testing of JSON APIs from the command line? Insulted by doing mindless greps against structured data? Fingers sore from typing `| python -mjson.tool`? Want <span style="color:#ff0000;">c</span><span style="color:#ff7f00;">o</span><span style="color:#cccc00;">l</span><span style="color:#00dd00;">o</span><span style="color:#00cccc;">r</span><span style="color:#0000ff;">s</span>?
 
 Well, **jutil** is (probably) for you! It runs on [node.js](http://nodejs.org) and you can install it via [npm](http://npmjs.org/) with `npm -g install jutil`.
 
