@@ -386,7 +386,7 @@ In a [config file](#config-files), you can turn unwrapping on by default, overri
 
 To make scriptwriting easier, you may wish to define a set of frequently-used functions or include utility libraries in the environment where jutil evaluates its input. You can do this with *modules*. You can include modules in two ways: by pointing jutil at a directory (in which case all .js files in that directory will be loaded — the `-M` or `--module-dir` option), or at individual files with `-m` or `--module`. By default, the directory `~/.jutil/modules` will be searched if it exists. You can specify default directories in a [config file](#config-files).
 
-As a plausible example, say you wanted the great [underscore.js](http://documentcloud.github.com/underscore/) available to you in all jutil calls. Simple download it and place it in the `~/.jutil/modules` directory, and the `_` object will exist:
+As a plausible example, say you wanted the great [underscore.js](http://documentcloud.github.com/underscore/) available to you in all jutil calls. Simply download it and place it in the `~/.jutil/modules` directory, and the `_` object will exist:
 
 ```sh
 $ echo "[3, 4, 1]" | jutil 'return _.shuffle($)'
@@ -424,6 +424,8 @@ echo '[ { "name": "Sam" }, { "name": "Lou" } ]' | jselect '{ name: name, hash: $
     }
 ]
 ```
+
+Note that modules in the `~/.jutil/modules` directory are not the same as Node modules. Any global functions or variables in a `.js` file in that directory simply become available to jutil scripts; the modules are effectively `eval`'d in the script context. To use Node modules, you can call `require()` in your scripts, or wrap the required functionality in a simple function in a jutil module, like the `$md5` example above.
 
 ## Config files
 
