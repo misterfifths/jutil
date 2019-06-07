@@ -2,7 +2,7 @@
     "name": "jutil",
     "description": "Command-line utilities for manipulating JSON",
     "homepage": "http://github.com/misterfifths/jutil",
-    "version": "0.7.1",
+    "version": "0.7.2",
     "author": "Tim Clem",
     "license": "MIT",
     "preferGlobal": true,
@@ -36,9 +36,9 @@
         "supports-color": "^6.1.0"
     },
     "devDependencies": {
-        "coveralls": "^3.0.3",
-        "jshint": "^2.10.0",
-        "nyc": "^13.3.0"
+        "coveralls": "^3.0.4",
+        "jshint": "^2.10.2",
+        "nyc": "^14.1.0"
     },
     "engines": {
         "node": ">=5.12.0"

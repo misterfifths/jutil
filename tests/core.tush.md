@@ -364,12 +364,11 @@ $ echo '{}' | jutil -m broken-module.js
 
 ### Objects that aren't JSON-convertible
 
-If you manage to create an object that cannot be converted to JSON, such as one that has a circular reference, an error is printed:
+If you manage to create an object that cannot be converted to JSON, such as one that has a circular reference, an error is printed. (The redirection and use of `head` below are to work around different error output between versions of node; later versions give a detailed explanation of where the circularity occurs.)
 
 ```sh
-$ echo '{}' | jtweak '$.self = $'
-@ Error converting result to string: TypeError: Converting circular structure to JSON
-? 1
+$ echo '{}' | jtweak '$.self = $' 2>&1 | head -n1
+| Error converting result to string: TypeError: Converting circular structure to JSON
 ```
 
 Similarly, as per the behavior of [JSON.stringify](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify), functions and other such objects are silently omitted from objects or converted to `null` in arrays:
