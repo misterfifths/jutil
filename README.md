@@ -10,16 +10,16 @@ Well, **jutil** is (probably) for you! It runs on [node.js](http://nodejs.org) a
 In its simplest form, jutil accepts JSON-formatted data, provides you an environment to run some JavaScript against it, and prints out the return value of that script. For instance:
 
 ```sh
-$ curl -s http://www.pokeapi.co/api/v2/pokemon/1/ | jutil 'return name'
+$ curl -s https://pokeapi.co/api/v2/pokemon/1/ | jutil 'return name'
 "bulbasaur"
 ```
 
 Or, if your script returns an object, it is formatted as JSON:
 
 ```sh
-$ curl -s http://www.pokeapi.co/api/v2/pokemon/1/ | jutil 'return types[0].type'
+$ curl -s https://pokeapi.co/api/v2/pokemon/1/ | jutil 'return types[0].type'
 {
-    "url": "http://www.pokeapi.co/api/v2/type/4/",
+    "url": "https://pokeapi.co/api/v2/type/4/",
     "name": "poison"
 }
 ```
@@ -27,7 +27,7 @@ $ curl -s http://www.pokeapi.co/api/v2/pokemon/1/ | jutil 'return types[0].type'
 But the real power of jutil comes from chaining together multiple commands. For instance, let's print out the names of all of Bulbasaur's base stats that are greater than 60 (see [Unwrapping](#unwrapping) for more about `-u`):
 
 ```sh
-$ curl -s http://www.pokeapi.co/api/v2/pokemon/1/ | jwhere -u stats 'base_stat > 60' | jformat '%{stat.name}'
+$ curl -s https://pokeapi.co/api/v2/pokemon/1/ | jwhere -u stats 'base_stat > 60' | jformat '%{stat.name}'
 special-defense
 special-attack
 ```
@@ -35,7 +35,7 @@ special-attack
 Or a more accurate list of a Pokemon's type:
 
 ```sh
-$ curl -s http://www.pokeapi.co/api/v2/pokemon/1/ | jsort -u types slot | jselect type.name
+$ curl -s https://pokeapi.co/api/v2/pokemon/1/ | jsort -u types slot | jselect type.name
 [
     "grass",
     "poison"
@@ -79,7 +79,7 @@ $ echo '[ {"x": 1, "y": 2}, {"x": 2, "y": 3}, {"x": 3, "y": 6} ]' | jwhere 'x + 
 Find the visible moves of Voltorb (see [Unwrapping](#unwrapping) for more about `-u`):
 
 ```sh
-$ curl -s http://www.pokeapi.co/api/v2/pokemon/100/ | jwhere -u abilities '!is_hidden'
+$ curl -s https://pokeapi.co/api/v2/pokemon/100/ | jwhere -u abilities '!is_hidden'
 [
     {
         "is_hidden": false,
@@ -174,10 +174,10 @@ $ echo '[5, 2, 6, 10]' | jsort -r
 
 This tool is intended to streamline the most common use for `jselect`, selecting only a subset of properties from objects in the data. `jprops` takes a list of property mappings, of the form `[to=]from`, where `to` is the property in the result and `from` is the property in the input. If `to` is ommitted, it defaults to `from`. Note that either of these mapping components can have dots in them, to specify an object traversal.
 
-So, for example, to collect only the usernames and tweets from the timeline:
+So, for example, to collate Bulbasaur's base stats:
 
 ```sh
-$ curl -s http://www.pokeapi.co/api/v2/pokemon/1 | jutil 'return stats' | jprops name=stat.name base_stat
+$ curl -s https://pokeapi.co/api/v2/pokemon/1 | jutil 'return stats' | jprops name=stat.name base_stat
 [
     {
         "name": "speed",
@@ -191,6 +191,8 @@ $ curl -s http://www.pokeapi.co/api/v2/pokemon/1 | jutil 'return stats' | jprops
 ]
 ```
 
+(In that example, you could also use [unwrapping](#unwrapping) to operate on the `stats` property, rather than the intermediate `return stats`.)
+
 Check out the examples for the [object-path](https://github.com/mariocasciaro/object-path) library to see what other types of property paths are supported.
 
 ## jformat
@@ -200,7 +202,7 @@ This one is kind of like `jselect`, but instead of returning an object for each 
 Here, have an example:
 
 ```sh
-$ curl -s http://www.pokeapi.co/api/v2/pokemon/1 |
+$ curl -s https://pokeapi.co/api/v2/pokemon/1 |
     jutil 'return stats' |
     jsort stat.name |
     jformat '%{stat.name.split("-").join(" ").padEnd(20)} %base_stat'
@@ -336,7 +338,7 @@ $ curl -s https://api.github.com/gists |
 Say the [names of all the Pokemon](https://soundcloud.com/tim-clem-404086192/all-pokemon):
 
 ```sh
-$ curl -s http://www.pokeapi.co/api/v2/pokedex/1/ |
+$ curl -s https://pokeapi.co/api/v2/pokedex/1/ |
   jformat -u pokemon_entries -n '%{pokemon_species.name}, ' |
   say -v Alex -f -
 ```
